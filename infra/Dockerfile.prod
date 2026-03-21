@@ -10,14 +10,24 @@ RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 WORKDIR /app
 
-# Copy everything (simpler, reliable)
+# Copy workspace config
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/ ./apps/
-COPY libs/ ./libs/
 COPY nest-cli.json tsconfig.json tsconfig.build.json ./
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Copy only backend apps and libs (exclude mobile/web-portal)
+COPY apps/api-gateway/ ./apps/api-gateway/
+COPY apps/los-service/ ./apps/los-service/
+COPY apps/lms-service/ ./apps/lms-service/
+COPY apps/bre-service/ ./apps/bre-service/
+COPY apps/collection-service/ ./apps/collection-service/
+COPY apps/bureau-service/ ./apps/bureau-service/
+COPY apps/payment-service/ ./apps/payment-service/
+COPY apps/notification-service/ ./apps/notification-service/
+COPY apps/colending-service/ ./apps/colending-service/
+COPY libs/ ./libs/
+
+# Install dependencies (no frozen lockfile since mobile apps are excluded)
+RUN pnpm install --no-frozen-lockfile
 
 # Generate Prisma client
 RUN npx prisma generate --schema=libs/database/prisma/schema.prisma
