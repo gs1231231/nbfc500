@@ -53,4 +53,7 @@ COPY --from=builder --chown=nestjs:nodejs /app/libs/database/prisma ./libs/datab
 USER nestjs
 EXPOSE 3000
 
-CMD ["node", "dist/apps/api-gateway/apps/api-gateway/src/main.js"]
+# Copy tsconfig for path resolution at runtime
+COPY --from=builder --chown=nestjs:nodejs /app/tsconfig.json ./
+
+CMD ["node", "-r", "tsconfig-paths/register", "dist/apps/api-gateway/apps/api-gateway/src/main.js"]
