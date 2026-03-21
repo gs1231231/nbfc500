@@ -8,7 +8,7 @@ async function bootstrap() {
   const isProd = process.env.NODE_ENV === 'production';
   const app = await NestFactory.create(isProd ? AppModuleProd : AppModule);
 
-  app.setGlobalPrefix('api/v1');
+  // Don't set global prefix — all controllers already include api/v1 in their paths
 
   app.useGlobalPipes(
     new ValidationPipe({
