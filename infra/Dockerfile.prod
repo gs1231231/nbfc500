@@ -1,98 +1,46 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # BankOS — Consolidated NestJS backend (production)
-# Target: t3.small (2 vCPU / 2 GB RAM) running Docker Compose
-#
-# Stage 1  base          node:20-alpine + pnpm
-# Stage 2  deps          install ALL workspace dependencies
-# Stage 3  builder       compile TypeScript → dist/
-# Stage 4  runner        lean production image, non-root user
+# Single-stage simplified build for t3.small deployment
 # ─────────────────────────────────────────────────────────────────────────────
 
-# ── Stage 1: base ─────────────────────────────────────────────────────────────
-FROM node:20-alpine AS base
+FROM node:20-alpine AS builder
 
-# Enable Corepack so pnpm is available without a global install
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 WORKDIR /app
 
-# ── Stage 2: install workspace dependencies ───────────────────────────────────
-FROM base AS deps
-
-# Copy workspace manifests first — Docker cache layer is invalidated only when
-# these files change, not on every source change.
+# Copy everything (simpler, reliable)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/ ./apps/
+COPY libs/ ./libs/
+COPY nest-cli.json tsconfig.json tsconfig.build.json ./
 
-# Copy every app/lib package.json so pnpm resolves the workspace graph
-COPY apps/api-gateway/package.json        ./apps/api-gateway/
-COPY apps/los-service/package.json        ./apps/los-service/
-COPY apps/lms-service/package.json        ./apps/lms-service/
-COPY apps/bre-service/package.json        ./apps/bre-service/
-COPY apps/collection-service/package.json ./apps/collection-service/
-COPY apps/bureau-service/package.json     ./apps/bureau-service/
-COPY apps/payment-service/package.json    ./apps/payment-service/
-COPY apps/notification-service/package.json ./apps/notification-service/
-COPY apps/colending-service/package.json  ./apps/colending-service/
-COPY libs/database/package.json           ./libs/database/
-COPY libs/auth/package.json               ./libs/auth/
-COPY libs/common/package.json             ./libs/common/
-COPY libs/events/package.json             ./libs/events/
-
-# Install all dependencies (including devDependencies needed for the build)
+# Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# ── Stage 3: build ────────────────────────────────────────────────────────────
-FROM base AS builder
+# Generate Prisma client
+RUN npx prisma generate --schema=libs/database/prisma/schema.prisma
 
-COPY --from=deps /app/node_modules        ./node_modules
-COPY --from=deps /app/apps                ./apps
-COPY --from=deps /app/libs                ./libs
+# Build the api-gateway (includes all modules via app.module.prod.ts)
+RUN npx nest build api-gateway
 
-# Copy full source tree
-COPY . .
-
-# Generate Prisma client before compiling TypeScript
-RUN pnpm prisma:generate
-
-# Build the api-gateway project (nest-cli.json entryFile → main)
-# In production we swap main.ts for main.prod.ts via the CMD below.
-RUN pnpm build:api-gateway
-
-# ── Stage 4: production runner ────────────────────────────────────────────────
+# ── Production runner ────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
 WORKDIR /app
-
 ENV NODE_ENV=production
 
-# Non-root user — principle of least privilege
 RUN addgroup --system --gid 1001 nodejs && \
     adduser  --system --uid 1001 nestjs
 
-# Only copy what is needed at runtime:
-#   dist/          compiled JS
-#   node_modules/  runtime deps (no devDeps — pnpm prunes them in CI,
-#                  but here we copy the full set from deps stage because
-#                  Prisma's generated client lives there)
-#   libs/database/prisma/  schema + migrations needed for prisma migrate deploy
-#   package.json   read by prisma CLI and NestJS internals
-
-COPY --from=builder --chown=nestjs:nodejs /app/dist                        ./dist
-COPY --from=deps    --chown=nestjs:nodejs /app/node_modules                ./node_modules
-COPY --from=builder --chown=nestjs:nodejs /app/package.json               ./package.json
-COPY --from=builder --chown=nestjs:nodejs /app/libs/database/prisma       ./libs/database/prisma
-
-# Copy nest-cli.json so the NestJS CLI can resolve module aliases at runtime
-COPY --from=builder --chown=nestjs:nodejs /app/nest-cli.json              ./nest-cli.json
-COPY --from=builder --chown=nestjs:nodejs /app/tsconfig.json              ./tsconfig.json
+# Copy built app and dependencies
+COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nestjs:nodejs /app/package.json ./
+COPY --from=builder --chown=nestjs:nodejs /app/libs/database/prisma ./libs/database/prisma
 
 USER nestjs
-
 EXPOSE 3000
 
-# Use the consolidated production entry point.
-# dist/apps/api-gateway/main corresponds to apps/api-gateway/src/main.ts
-# but we point at main.prod instead (compiled alongside main.ts by nest build).
 CMD ["node", "dist/apps/api-gateway/main.prod"]
