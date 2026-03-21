@@ -1,0 +1,184 @@
+version: '3.9'
+
+# BankOS Production Compose — single t3.small (2 GB RAM)
+# Strategy: one consolidated NestJS process instead of 9 microservices,
+# keeping the memory budget well under 2 GB.
+#
+# Rough memory targets:
+#   postgres      256 MB
+#   redis         128 MB
+#   api-gateway   512 MB  (all NestJS modules merged)
+#   web-portal    256 MB  (Next.js standalone)
+#   nginx          32 MB
+#   OS + headroom ~900 MB
+#
+# Total                  ≈ 1.2 GB active, leaving ~800 MB headroom.
+
+services:
+  # ── Infrastructure ────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: bankos-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: bankos
+      POSTGRES_USER: bankos
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-BankOS_Prod_2026!}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U bankos -d bankos']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    # No external port — only reachable by other containers on bankos-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: bankos-redis
+    restart: always
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ── Consolidated NestJS Backend ───────────────────────────────────────────
+  # One process, all modules — avoids 9x Node.js startup costs on 2 GB RAM.
+  api-gateway:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.prod
+    image: bankos-api:${IMAGE_TAG:-latest}
+    container_name: bankos-api
+    restart: always
+    expose:
+      - '3000'
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+
+      # Database
+      DATABASE_URL: postgresql://bankos:${DB_PASSWORD:-BankOS_Prod_2026!}@postgres:5432/bankos?schema=public&connection_limit=10&pool_timeout=30
+
+      # Redis
+      REDIS_URL: redis://redis:6379
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-change-this-in-production-min-32-chars}
+      JWT_EXPIRY: 900s
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-this-refresh-secret-min-32}
+      JWT_REFRESH_EXPIRY: 7d
+
+      # Organisation / Tenancy
+      ORG_ID: ${ORG_ID:-bankos}
+
+      # External APIs (override in .env.prod)
+      EQUIFAX_API_KEY: ${EQUIFAX_API_KEY:-}
+      EQUIFAX_API_URL: ${EQUIFAX_API_URL:-}
+      CIBIL_API_KEY: ${CIBIL_API_KEY:-}
+      CIBIL_API_URL: ${CIBIL_API_URL:-}
+      EXPERIAN_API_KEY: ${EXPERIAN_API_KEY:-}
+      EXPERIAN_API_URL: ${EXPERIAN_API_URL:-}
+
+      # Notifications
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@bankos.in}
+      SMS_API_KEY: ${SMS_API_KEY:-}
+      SMS_SENDER_ID: ${SMS_SENDER_ID:-BANKOS}
+
+      # Payment gateway
+      PAYMENT_GATEWAY_URL: ${PAYMENT_GATEWAY_URL:-}
+      PAYMENT_GATEWAY_KEY: ${PAYMENT_GATEWAY_KEY:-}
+
+      # Node memory cap — leave room for postgres + redis + Next.js
+      NODE_OPTIONS: '--max-old-space-size=384'
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - bankos-net
+
+  # ── Next.js Web Portal ────────────────────────────────────────────────────
+  web-portal:
+    build:
+      context: ./apps/web-portal
+      dockerfile: Dockerfile
+    image: bankos-web:${IMAGE_TAG:-latest}
+    container_name: bankos-web
+    restart: always
+    expose:
+      - '3000'
+    environment:
+      NODE_ENV: production
+      # Routed by nginx — the browser talks to /api via the same origin
+      NEXT_PUBLIC_API_URL: ${PUBLIC_DOMAIN:-http://localhost}/api/v1
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    depends_on:
+      - api-gateway
+    networks:
+      - bankos-net
+
+  # ── Nginx Reverse Proxy ───────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: bankos-nginx
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'   # reserved for future SSL termination / certbot
+    volumes:
+      - ./infra/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+    depends_on:
+      - api-gateway
+      - web-portal
+    networks:
+      - bankos-net
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  bankos-net:
+    driver: bridge

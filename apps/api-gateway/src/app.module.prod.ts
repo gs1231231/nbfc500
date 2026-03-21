@@ -1,0 +1,117 @@
+/**
+ * app.module.prod.ts — Consolidated production module
+ *
+ * On a t3.small (2 GB RAM) running everything in Docker Compose, launching 9
+ * separate Node processes is prohibitively expensive (~150–200 MB each).
+ * Instead, this module imports every service's feature modules into a single
+ * NestJS process so we pay for V8 / libuv only once.
+ *
+ * Each feature module is still self-contained (its own controllers, services,
+ * repositories); only the process boundary has been removed.
+ *
+ * Route namespacing is handled by the global prefix 'api/v1' set in
+ * main.prod.ts, and each module's controllers use their own @Controller()
+ * path decorators (e.g. @Controller('applications'), @Controller('loans')).
+ */
+
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+
+// ── Shared infrastructure libs ─────────────────────────────────────────────
+import { DatabaseModule } from '@bankos/database';
+import { AuthModule } from '@bankos/auth';
+
+// ── API Gateway modules ────────────────────────────────────────────────────
+import { HealthModule } from './health/health.module';
+
+// ── LOS (Loan Origination System) modules ─────────────────────────────────
+import { ApplicationModule } from '../../los-service/src/application/application.module';
+import { CustomerModule } from '../../los-service/src/customer/customer.module';
+import { DocumentModule } from '../../los-service/src/document/document.module';
+import { SanctionModule } from '../../los-service/src/sanction/sanction.module';
+import { DisbursementModule } from '../../los-service/src/disbursement/disbursement.module';
+import { CommissionModule } from '../../los-service/src/commission/commission.module';
+
+// ── LMS (Loan Management System) modules ──────────────────────────────────
+import { PaymentModule as LmsPaymentModule } from '../../lms-service/src/payment/payment.module';
+import { NpaModule } from '../../lms-service/src/npa/npa.module';
+import { AccrualModule } from '../../lms-service/src/accrual/accrual.module';
+import { OtsModule } from '../../lms-service/src/ots/ots.module';
+import { WriteoffModule } from '../../lms-service/src/writeoff/writeoff.module';
+
+// ── BRE (Business Rule Engine) ────────────────────────────────────────────
+import { BreModule } from '../../bre-service/src/bre.module';
+
+// ── Collection ─────────────────────────────────────────────────────────────
+import { CollectionModule } from '../../collection-service/src/collection/collection.module';
+import { RepossessionModule } from '../../collection-service/src/repossession/repossession.module';
+import { LegalModule } from '../../collection-service/src/legal/legal.module';
+
+// ── Bureau (Credit Bureau) ─────────────────────────────────────────────────
+import { BureauModule } from '../../bureau-service/src/bureau.module';
+import { CicModule } from '../../bureau-service/src/cic/cic.module';
+
+// ── Notification ───────────────────────────────────────────────────────────
+import { NotificationModule } from '../../notification-service/src/notification/notification.module';
+import { ChatbotModule } from '../../notification-service/src/chatbot/chatbot.module';
+
+// ── Co-Lending ─────────────────────────────────────────────────────────────
+import { CoLendingModule } from '../../colending-service/src/colending/colending.module';
+
+@Module({
+  imports: [
+    // ── Global config (loaded once, isGlobal = true shares across all modules)
+    ConfigModule.forRoot({
+      isGlobal: true,
+      // In production the .env.prod file is bind-mounted or variables are
+      // injected by Docker Compose / EC2 user-data.
+      envFilePath: ['.env.prod', '.env'],
+    }),
+
+    // ── Task scheduling (needed by LMS and Collection cron jobs)
+    ScheduleModule.forRoot(),
+
+    // ── Infrastructure
+    DatabaseModule,
+    AuthModule,
+
+    // ── API Gateway
+    HealthModule,
+
+    // ── LOS
+    ApplicationModule,
+    CustomerModule,
+    DocumentModule,
+    SanctionModule,
+    DisbursementModule,
+    CommissionModule,
+
+    // ── LMS
+    LmsPaymentModule,
+    NpaModule,
+    AccrualModule,
+    OtsModule,
+    WriteoffModule,
+
+    // ── BRE
+    BreModule,
+
+    // ── Collection
+    CollectionModule,
+    RepossessionModule,
+    LegalModule,
+
+    // ── Bureau
+    BureauModule,
+    CicModule,
+
+    // ── Notification
+    NotificationModule,
+    ChatbotModule,
+
+    // ── Co-Lending
+    CoLendingModule,
+  ],
+})
+export class AppModuleProd {}
