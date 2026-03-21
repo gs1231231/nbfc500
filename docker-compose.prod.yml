@@ -36,7 +36,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
-    # No external port — only reachable by other containers on bankos-net
+    networks:
+      - bankos-net
 
   redis:
     image: redis:7-alpine
@@ -61,6 +62,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
+    networks:
+      - bankos-net
 
   # ── Consolidated NestJS Backend ───────────────────────────────────────────
   # One process, all modules — avoids 9x Node.js startup costs on 2 GB RAM.
