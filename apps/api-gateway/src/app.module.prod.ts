@@ -24,6 +24,7 @@ import { AuthModule } from '@bankos/auth';
 
 // ── API Gateway modules ────────────────────────────────────────────────────
 import { HealthModule } from './health/health.module';
+import { AuthModule as GatewayAuthModule } from './auth/auth.module';
 
 // ── LOS (Loan Origination System) modules ─────────────────────────────────
 import { ApplicationModule } from '../../los-service/src/application/application.module';
@@ -78,6 +79,7 @@ import { CoLendingModule } from '../../colending-service/src/colending/colending
 
     // ── API Gateway
     HealthModule,
+    GatewayAuthModule,
 
     // ── LOS
     ApplicationModule,
