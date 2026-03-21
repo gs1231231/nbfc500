@@ -7,6 +7,7 @@ import { NpaModule } from './npa/npa.module';
 import { AccrualModule } from './accrual/accrual.module';
 import { OtsModule } from './ots/ots.module';
 import { WriteoffModule } from './writeoff/writeoff.module';
+import { LoanModule } from './loan/loan.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { WriteoffModule } from './writeoff/writeoff.module';
     AccrualModule,
     OtsModule,
     WriteoffModule,
+    LoanModule,
   ],
 })
 export class AppModule {}

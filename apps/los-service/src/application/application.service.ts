@@ -540,6 +540,7 @@ export class ApplicationService {
     orgId: string,
     id: string,
     dto: TransitionApplicationDto,
+    userId?: string,
   ) {
     const application = await this.prisma.loanApplication.findFirst({
       where: { id, organizationId: orgId, deletedAt: null },
@@ -579,6 +580,16 @@ export class ApplicationService {
         assignedTo: {
           select: { id: true, firstName: true, lastName: true, email: true },
         },
+      },
+    });
+
+    await this.prisma.applicationStatusHistory.create({
+      data: {
+        applicationId: id,
+        fromStatus: currentStatus,
+        toStatus: dto.toStatus,
+        changedBy: userId || 'system',
+        remarks: dto.remarks,
       },
     });
 

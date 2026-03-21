@@ -25,6 +25,7 @@ import { AuthModule } from '@bankos/auth';
 // ── API Gateway modules ────────────────────────────────────────────────────
 import { HealthModule } from './health/health.module';
 import { AuthModule as GatewayAuthModule } from './auth/auth.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 // ── LOS (Loan Origination System) modules ─────────────────────────────────
 import { ApplicationModule } from '../../los-service/src/application/application.module';
@@ -40,6 +41,7 @@ import { NpaModule } from '../../lms-service/src/npa/npa.module';
 import { AccrualModule } from '../../lms-service/src/accrual/accrual.module';
 import { OtsModule } from '../../lms-service/src/ots/ots.module';
 import { WriteoffModule } from '../../lms-service/src/writeoff/writeoff.module';
+import { LoanModule } from '../../lms-service/src/loan/loan.module';
 
 // ── BRE (Business Rule Engine) ────────────────────────────────────────────
 import { BreModule } from '../../bre-service/src/bre.module';
@@ -80,6 +82,7 @@ import { CoLendingModule } from '../../colending-service/src/colending/colending
     // ── API Gateway
     HealthModule,
     GatewayAuthModule,
+    DashboardModule,
 
     // ── LOS
     ApplicationModule,
@@ -95,6 +98,7 @@ import { CoLendingModule } from '../../colending-service/src/colending/colending
     AccrualModule,
     OtsModule,
     WriteoffModule,
+    LoanModule,
 
     // ── BRE
     BreModule,

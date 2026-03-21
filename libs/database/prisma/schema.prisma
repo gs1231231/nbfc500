@@ -536,12 +536,28 @@ model LoanApplication {
   loans                     Loan[]
   documents                 Document[]
   bureauRequests            BureauRequest[]
+  statusHistory             ApplicationStatusHistory[]
 
   @@index([organizationId])
   @@index([organizationId, status])
   @@index([organizationId, customerId])
   @@index([applicationNumber])
   @@map("loan_applications")
+}
+
+model ApplicationStatusHistory {
+  id            String   @id @default(uuid())
+  applicationId String
+  fromStatus    String
+  toStatus      String
+  changedBy     String
+  remarks       String?
+  createdAt     DateTime @default(now())
+
+  application   LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+
+  @@index([applicationId])
+  @@map("application_status_history")
 }
 
 model Loan {
