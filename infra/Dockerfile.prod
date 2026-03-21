@@ -50,10 +50,10 @@ COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/package.json ./
 COPY --from=builder --chown=nestjs:nodejs /app/libs/database/prisma ./libs/database/prisma
 
+# Create runtime tsconfig for path resolution (before switching to non-root user)
+RUN echo '{"compilerOptions":{"baseUrl":".","paths":{"@bankos/common":["dist/apps/api-gateway/libs/common/src/index.js"],"@bankos/common/*":["dist/apps/api-gateway/libs/common/src/*"],"@bankos/database":["dist/apps/api-gateway/libs/database/src/index.js"],"@bankos/database/*":["dist/apps/api-gateway/libs/database/src/*"],"@bankos/auth":["dist/apps/api-gateway/libs/auth/src/index.js"],"@bankos/auth/*":["dist/apps/api-gateway/libs/auth/src/*"],"@bankos/events":["dist/apps/api-gateway/libs/events/src/index.js"],"@bankos/events/*":["dist/apps/api-gateway/libs/events/src/*"]}}}' > tsconfig.json
+
 USER nestjs
 EXPOSE 3000
-
-# Create runtime tsconfig for path resolution
-RUN echo '{"compilerOptions":{"baseUrl":".","paths":{"@bankos/common":["dist/apps/api-gateway/libs/common/src/index.js"],"@bankos/common/*":["dist/apps/api-gateway/libs/common/src/*"],"@bankos/database":["dist/apps/api-gateway/libs/database/src/index.js"],"@bankos/database/*":["dist/apps/api-gateway/libs/database/src/*"],"@bankos/auth":["dist/apps/api-gateway/libs/auth/src/index.js"],"@bankos/auth/*":["dist/apps/api-gateway/libs/auth/src/*"],"@bankos/events":["dist/apps/api-gateway/libs/events/src/index.js"],"@bankos/events/*":["dist/apps/api-gateway/libs/events/src/*"]}}}' > tsconfig.json
 
 CMD ["node", "-r", "tsconfig-paths/register", "dist/apps/api-gateway/apps/api-gateway/src/main.js"]
