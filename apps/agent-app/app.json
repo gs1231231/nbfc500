@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "BankOS Agent",
+    "slug": "bankos-agent",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0f172a"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bankos.agent",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Required to capture visit location for field collection.",
+        "NSCameraUsageDescription": "Required to capture proof of visit photos."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f172a"
+      },
+      "package": "com.bankos.agent",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "CAMERA"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

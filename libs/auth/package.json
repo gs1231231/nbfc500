@@ -1,0 +1,12 @@
+{
+  "name": "@bankos/auth",
+  "version": "0.1.0",
+  "description": "BankOS authentication and authorization utilities",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.lib.json",
+    "typecheck": "tsc -p tsconfig.lib.json --noEmit"
+  }
+}

@@ -1,0 +1,305 @@
+# BankOS Deploy Workflow - Prompt 46
+# Build Docker images, push to ECR, deploy to K8s via Helm.
+# Triggered by CI workflow on main branch push, or manually.
+
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (git SHA short)"
+        required: true
+        type: string
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+        default: staging
+
+  workflow_call:
+    inputs:
+      image_tag:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com
+  ECR_REPOSITORY_PREFIX: bankos
+  K8S_NAMESPACE: bankos
+  HELM_RELEASE_NAME: bankos
+  HELM_CHART_PATH: ./infra/helm
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - api-gateway
+          - loan-service
+          - collection-service
+          - payment-service
+          - notification-service
+          - underwriting-service
+          - reports-service
+    outputs:
+      image-tag: ${{ inputs.image_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-${{ matrix.service }}-
+            ${{ runner.os }}-buildx-
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/${{ matrix.service }}/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_PREFIX }}/${{ matrix.service }}:${{ inputs.image_tag }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_PREFIX }}/${{ matrix.service }}:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          build-args: |
+            NODE_ENV=production
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+            SERVICE_NAME=${{ matrix.service }}
+          labels: |
+            org.opencontainers.image.title=${{ matrix.service }}
+            org.opencontainers.image.version=${{ inputs.image_tag }}
+            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Move Docker cache (prevent cache growth)
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      - name: Scan image for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_PREFIX }}/${{ matrix.service }}:${{ inputs.image_tag }}
+          format: sarif
+          output: trivy-${{ matrix.service }}.sarif
+          severity: CRITICAL,HIGH
+          exit-code: 0 # warn but don't block
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-${{ matrix.service }}.sarif
+          category: trivy-${{ matrix.service }}
+
+  # ────────────────────────────────────────────────────────────────────────────
+  run-migrations:
+    name: Run Database Migrations
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "9"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run Prisma migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Running Prisma migrations for ${{ inputs.environment }}..."
+          pnpm prisma migrate deploy
+          echo "Migrations complete"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  deploy-helm:
+    name: Deploy via Helm
+    runs-on: ubuntu-latest
+    needs: run-migrations
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ inputs.environment == 'production' && 'https://api.bankos.in' || 'https://api.staging.bankos.in' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "v1.29.0"
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ env.AWS_REGION }} \
+            --name bankos-${{ inputs.environment }}-cluster
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "v3.14.0"
+
+      - name: Select values file
+        id: values
+        run: |
+          if [ "${{ inputs.environment }}" = "production" ]; then
+            echo "values_file=infra/helm/values-prod.yaml" >> $GITHUB_OUTPUT
+          else
+            echo "values_file=infra/helm/values-staging.yaml" >> $GITHUB_OUTPUT
+          fi
+          # Fall back to default values.yaml if environment-specific file doesn't exist
+          if [ ! -f "${{ steps.values.outputs.values_file }}" ]; then
+            echo "values_file=infra/helm/values.yaml" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Helm upgrade / install
+        run: |
+          helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.HELM_CHART_PATH }} \
+            --namespace ${{ env.K8S_NAMESPACE }} \
+            --create-namespace \
+            --values ${{ steps.values.outputs.values_file }} \
+            --set global.imageTag=${{ inputs.image_tag }} \
+            --set global.environment=${{ inputs.environment }} \
+            --atomic \
+            --cleanup-on-fail \
+            --timeout 10m \
+            --wait
+
+      - name: Verify deployment health
+        run: |
+          echo "Checking rollout status for all deployments..."
+          for service in api-gateway loan-service collection-service payment-service notification-service underwriting-service reports-service; do
+            echo "Checking $service..."
+            kubectl rollout status deployment/$service \
+              --namespace ${{ env.K8S_NAMESPACE }} \
+              --timeout=5m
+          done
+          echo "All deployments healthy"
+
+      - name: Smoke test
+        run: |
+          BASE_URL=${{ inputs.environment == 'production' && 'https://api.bankos.in' || 'https://api.staging.bankos.in' }}
+          echo "Running smoke tests against $BASE_URL..."
+
+          # Health check
+          curl --fail --max-time 10 "$BASE_URL/health" || exit 1
+          echo "Health check passed"
+
+          # Readiness check
+          curl --fail --max-time 10 "$BASE_URL/health/ready" || exit 1
+          echo "Readiness check passed"
+
+      - name: Notify Slack on success
+        if: success()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "text": ":white_check_mark: BankOS deployed to *${{ inputs.environment }}* | tag: `${{ inputs.image_tag }}` | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DEPLOY_WEBHOOK }}
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "text": ":x: BankOS deployment to *${{ inputs.environment }}* FAILED | tag: `${{ inputs.image_tag }}` | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DEPLOY_WEBHOOK }}
+
+  # ────────────────────────────────────────────────────────────────────────────
+  rollback:
+    name: Rollback (on failure)
+    runs-on: ubuntu-latest
+    needs: deploy-helm
+    if: failure()
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ env.AWS_REGION }} \
+            --name bankos-${{ inputs.environment }}-cluster
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "v3.14.0"
+
+      - name: Helm rollback
+        run: |
+          echo "Deployment failed. Rolling back to previous release..."
+          helm rollback ${{ env.HELM_RELEASE_NAME }} 0 \
+            --namespace ${{ env.K8S_NAMESPACE }} \
+            --wait \
+            --timeout 5m
+          echo "Rollback complete"

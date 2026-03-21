@@ -1,0 +1,30 @@
+apiVersion: v2
+name: bankos
+description: |
+  BankOS - NBFC Lending Platform
+  Multi-service Helm chart for NestJS microservices.
+  Services: api-gateway, loan-service, collection-service, payment-service,
+            notification-service, underwriting-service, reports-service.
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+keywords:
+  - nbfc
+  - lending
+  - fintech
+  - banking
+
+home: https://github.com/your-org/nbfc-rockers
+sources:
+  - https://github.com/your-org/nbfc-rockers
+
+maintainers:
+  - name: BankOS Engineering
+    email: platform@bankos.in
+
+dependencies: []
+
+annotations:
+  category: FinTech
+  compliance: RBI-NBFC

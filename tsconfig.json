@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "@bankos/common": ["libs/common/src/index.ts"],
+      "@bankos/common/*": ["libs/common/src/*"],
+      "@bankos/database": ["libs/database/src/index.ts"],
+      "@bankos/database/*": ["libs/database/src/*"],
+      "@bankos/auth": ["libs/auth/src/index.ts"],
+      "@bankos/auth/*": ["libs/auth/src/*"],
+      "@bankos/events": ["libs/events/src/index.ts"],
+      "@bankos/events/*": ["libs/events/src/*"]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

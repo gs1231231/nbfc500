@@ -1,0 +1,895 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum LicenseType {
+  NBFC_ICC
+  NBFC_MFI
+  HFC
+  NBFC_FACTOR
+}
+
+enum BranchType {
+  HEAD_OFFICE
+  BRANCH
+  HUB
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum CustomerType {
+  INDIVIDUAL
+  PROPRIETORSHIP
+  PARTNERSHIP
+  PRIVATE_LIMITED
+  PUBLIC_LIMITED
+  LLP
+  HUF
+  TRUST
+}
+
+enum EmploymentType {
+  SALARIED
+  SELF_EMPLOYED_PROFESSIONAL
+  SELF_EMPLOYED_BUSINESS
+  RETIRED
+  HOMEMAKER
+  STUDENT
+  UNEMPLOYED
+}
+
+enum KycStatus {
+  PENDING
+  IN_PROGRESS
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum RiskCategory {
+  LOW
+  MEDIUM
+  HIGH
+  VERY_HIGH
+}
+
+enum ProductType {
+  PERSONAL_LOAN
+  BUSINESS_LOAN
+  VEHICLE_FINANCE
+  LAP
+  HOME_LOAN
+  GOLD_LOAN
+  EDUCATION_LOAN
+  MSME_LOAN
+  SUPPLY_CHAIN_FINANCE
+  MICROFINANCE
+}
+
+enum ApplicationStatus {
+  LEAD
+  APPLICATION
+  DOCUMENT_COLLECTION
+  BUREAU_CHECK
+  UNDERWRITING
+  APPROVED
+  SANCTIONED
+  DISBURSEMENT_PENDING
+  DISBURSED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+enum SourceType {
+  DSA
+  BRANCH
+  WEB
+  MOBILE_APP
+  API
+  WALKIN
+}
+
+enum LoanStatus {
+  ACTIVE
+  CLOSED
+  WRITTEN_OFF
+  RESTRUCTURED
+  FORECLOSED
+  SETTLED
+}
+
+enum NpaClassification {
+  STANDARD
+  SMA_0
+  SMA_1
+  SMA_2
+  NPA_SUBSTANDARD
+  NPA_DOUBTFUL_1
+  NPA_DOUBTFUL_2
+  NPA_DOUBTFUL_3
+  NPA_LOSS
+}
+
+enum ScheduleStatus {
+  PENDING
+  PAID
+  PARTIALLY_PAID
+  OVERDUE
+}
+
+enum PaymentMode {
+  NACH
+  UPI
+  NEFT
+  RTGS
+  CASH
+  CHEQUE
+  ONLINE
+  DEMAND_DRAFT
+}
+
+enum PaymentStatus {
+  SUCCESS
+  FAILED
+  PENDING
+  REVERSED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+enum BureauType {
+  CIBIL
+  EXPERIAN
+  CRIF
+  EQUIFAX
+}
+
+enum BureauPullType {
+  SOFT
+  HARD
+}
+
+enum BureauRequestStatus {
+  INITIATED
+  SUCCESS
+  FAILED
+  TIMEOUT
+}
+
+enum BreRuleCategory {
+  ELIGIBILITY
+  POLICY
+  SCORECARD
+  PRICING
+  DEVIATION
+}
+
+enum BreRuleAction {
+  APPROVE
+  REJECT
+  REFER
+}
+
+enum BreFinalDecision {
+  APPROVED
+  REJECTED
+  REFERRED
+}
+
+enum CollectionTaskType {
+  SMS
+  WHATSAPP
+  IVR
+  TELECALL
+  FIELD_VISIT
+  LEGAL_NOTICE
+  AGENCY_ALLOCATION
+}
+
+enum CollectionDisposition {
+  PAID
+  PTP
+  NOT_AVAILABLE
+  REFUSED
+  SHIFTED
+  CALLBACK
+  WRONG_NUMBER
+  DECEASED
+  NO_DISPOSITION
+}
+
+enum CollectionTaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+  CANCELLED
+}
+
+enum DsaType {
+  INDIVIDUAL
+  AGENCY
+  CORPORATE
+  DIGITAL_PARTNER
+}
+
+enum CoLendingStatus {
+  ALLOCATED
+  DISBURSED
+  ACTIVE
+  CLOSED
+}
+
+enum DocumentType {
+  AADHAAR_FRONT
+  AADHAAR_BACK
+  PAN_CARD
+  SALARY_SLIP
+  BANK_STATEMENT
+  ITR
+  PHOTO
+  SIGNATURE
+  PROPERTY_DOC
+  VEHICLE_RC
+  GOLD_ASSESSMENT
+  SANCTION_LETTER
+  LOAN_AGREEMENT
+  OTHER
+}
+
+// ============================================================
+// Users & Auth Models
+// ============================================================
+
+model Organization {
+  id                    String      @id @default(uuid())
+  name                  String
+  code                  String      @unique
+  licenseType           LicenseType
+  rbiRegistrationNumber String
+  cinNumber             String
+  gstNumber             String?
+  address               String
+  city                  String
+  state                 String
+  pincode               String
+  isActive              Boolean     @default(true)
+  settings              Json        @default("{}")
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  createdBy             String?
+  updatedBy             String?
+  deletedAt             DateTime?
+
+  branches              Branch[]
+  users                 User[]
+  roles                 Role[]
+  auditLogs             AuditLog[]
+  customers             Customer[]
+  loanProducts          LoanProduct[]
+  loanApplications      LoanApplication[]
+  loans                 Loan[]
+  payments              Payment[]
+  bureauRequests        BureauRequest[]
+  breRules              BreRule[]
+  breDecisions          BreDecision[]
+  collectionTasks       CollectionTask[]
+  dsas                  DSA[]
+  coLendingPartners     CoLendingPartner[]
+  glEntries             GlEntry[]
+  documents             Document[]
+
+  @@index([code])
+  @@map("organizations")
+}
+
+model Branch {
+  id             String     @id @default(uuid())
+  organizationId String
+  name           String
+  code           String
+  branchType     BranchType
+  address        String
+  city           String
+  state          String
+  pincode        String
+  latitude       Float?
+  longitude      Float?
+  managerId      String?
+  isActive       Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  createdBy      String?
+  updatedBy      String?
+  deletedAt      DateTime?
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  manager          User?        @relation("BranchManager", fields: [managerId], references: [id], onDelete: Restrict)
+  users            User[]       @relation("UserBranch")
+  loanApplications LoanApplication[]
+  loans            Loan[]
+  glEntries        GlEntry[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@map("branches")
+}
+
+model User {
+  id             String    @id @default(uuid())
+  organizationId String
+  branchId       String?
+  email          String    @unique
+  phone          String
+  firstName      String
+  lastName       String
+  passwordHash   String
+  mfaSecret      String?
+  mfaEnabled     Boolean   @default(false)
+  employeeCode   String
+  designation    String?
+  isActive       Boolean   @default(true)
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdBy      String?
+  updatedBy      String?
+  deletedAt      DateTime?
+
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch               Branch?      @relation("UserBranch", fields: [branchId], references: [id], onDelete: Restrict)
+  userRoles            UserRole[]
+  managedBranches      Branch[]     @relation("BranchManager")
+  assignedApplications LoanApplication[] @relation("AssignedOfficer")
+  auditLogs            AuditLog[]
+
+  @@unique([organizationId, email])
+  @@unique([organizationId, phone])
+  @@index([organizationId])
+  @@map("users")
+}
+
+model Role {
+  id             String    @id @default(uuid())
+  organizationId String
+  name           String
+  code           String    @unique
+  permissions    Json      @default("[]")
+  isSystemRole   Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  userRoles      UserRole[]
+
+  @@index([organizationId])
+  @@map("roles")
+}
+
+model UserRole {
+  id       String  @id @default(uuid())
+  userId   String
+  roleId   String
+  branchId String?
+
+  user     User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  role     Role    @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+model AuditLog {
+  id             String      @id @default(uuid())
+  organizationId String
+  userId         String
+  action         AuditAction
+  entityType     String
+  entityId       String
+  changes        Json        @default("{}")
+  ipAddress      String?
+  userAgent      String?
+  timestamp      DateTime    @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, entityType, entityId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+// ============================================================
+// Lending Entities
+// ============================================================
+
+model Customer {
+  id                    String         @id @default(uuid())
+  organizationId        String
+  customerNumber        String         @unique
+  customerType          CustomerType   @default(INDIVIDUAL)
+  firstName             String
+  middleName            String?
+  lastName              String
+  fullName              String
+  dateOfBirth           DateTime
+  gender                Gender
+  panNumber             String
+  aadhaarNumber         String?
+  email                 String?
+  phone                 String
+  alternatePhone        String?
+  currentAddressLine1   String?
+  currentAddressLine2   String?
+  currentCity           String?
+  currentState          String?
+  currentPincode        String?
+  permanentAddressLine1 String?
+  permanentAddressLine2 String?
+  permanentCity         String?
+  permanentState        String?
+  permanentPincode      String?
+  employmentType        EmploymentType
+  employerName          String?
+  monthlyIncomePaisa    Int?
+  kycStatus             KycStatus      @default(PENDING)
+  riskCategory          RiskCategory?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  createdBy             String?
+  updatedBy             String?
+  deletedAt             DateTime?
+
+  organization          Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loanApplications      LoanApplication[]
+  loans                 Loan[]
+  documents             Document[]
+  bureauRequests        BureauRequest[]
+
+  @@index([organizationId])
+  @@index([organizationId, phone])
+  @@index([organizationId, panNumber])
+  @@map("customers")
+}
+
+model LoanProduct {
+  id                    String      @id @default(uuid())
+  organizationId        String
+  name                  String
+  code                  String      @unique
+  productType           ProductType
+  minAmountPaisa        Int
+  maxAmountPaisa        Int
+  minTenureMonths       Int
+  maxTenureMonths       Int
+  minInterestRateBps    Int
+  maxInterestRateBps    Int
+  processingFeePercent  Decimal     @db.Decimal(5, 2)
+  isSecured             Boolean     @default(false)
+  collateralTypes       Json?
+  isActive              Boolean     @default(true)
+  settings              Json        @default("{}")
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  createdBy             String?
+  updatedBy             String?
+  deletedAt             DateTime?
+
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loanApplications      LoanApplication[]
+  loans                 Loan[]
+  breRules              BreRule[]
+
+  @@index([organizationId])
+  @@map("loan_products")
+}
+
+model LoanApplication {
+  id                        String            @id @default(uuid())
+  organizationId            String
+  branchId                  String
+  applicationNumber         String            @unique
+  customerId                String
+  productId                 String
+  requestedAmountPaisa      Int
+  requestedTenureMonths     Int
+  status                    ApplicationStatus @default(LEAD)
+  sourceType                SourceType        @default(BRANCH)
+  dsaId                     String?
+  assignedToId              String?
+  sanctionedAmountPaisa     Int?
+  sanctionedTenureMonths    Int?
+  sanctionedInterestRateBps Int?
+  rejectionReason           String?
+  breDecisionId             String?
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @updatedAt
+  createdBy                 String?
+  updatedBy                 String?
+  deletedAt                 DateTime?
+
+  organization              Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch                    Branch            @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  customer                  Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  product                   LoanProduct       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  dsa                       DSA?              @relation(fields: [dsaId], references: [id], onDelete: Restrict)
+  assignedTo                User?             @relation("AssignedOfficer", fields: [assignedToId], references: [id], onDelete: Restrict)
+  breDecision               BreDecision?      @relation(fields: [breDecisionId], references: [id], onDelete: Restrict)
+  loans                     Loan[]
+  documents                 Document[]
+  bureauRequests            BureauRequest[]
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, customerId])
+  @@index([applicationNumber])
+  @@map("loan_applications")
+}
+
+model Loan {
+  id                        String            @id @default(uuid())
+  organizationId            String
+  branchId                  String
+  loanNumber                String            @unique
+  applicationId             String
+  customerId                String
+  productId                 String
+  disbursedAmountPaisa      Int
+  disbursementDate          DateTime
+  interestRateBps           Int
+  tenureMonths              Int
+  emiAmountPaisa            Int
+  totalInterestPaisa        Int
+  outstandingPrincipalPaisa Int
+  outstandingInterestPaisa  Int               @default(0)
+  totalOverduePaisa         Int               @default(0)
+  dpd                       Int               @default(0)
+  npaClassification         NpaClassification @default(STANDARD)
+  npaDate                   DateTime?
+  loanStatus                LoanStatus        @default(ACTIVE)
+  maturityDate              DateTime
+  closureDate               DateTime?
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @updatedAt
+  createdBy                 String?
+  updatedBy                 String?
+
+  organization              Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch                    Branch            @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  application               LoanApplication   @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  customer                  Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  product                   LoanProduct       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  schedules                 LoanSchedule[]
+  payments                  Payment[]
+  collectionTasks           CollectionTask[]
+  coLendingAllocation       CoLendingAllocation?
+
+  @@index([organizationId])
+  @@index([organizationId, loanStatus])
+  @@index([organizationId, customerId])
+  @@index([loanNumber])
+  @@map("loans")
+}
+
+model LoanSchedule {
+  id                      String         @id @default(uuid())
+  loanId                  String
+  installmentNumber       Int
+  dueDate                 DateTime
+  emiAmountPaisa          Int
+  principalComponentPaisa Int
+  interestComponentPaisa  Int
+  openingBalancePaisa     Int
+  closingBalancePaisa     Int
+  paidAmountPaisa         Int            @default(0)
+  paidDate                DateTime?
+  paidPrincipalPaisa      Int            @default(0)
+  paidInterestPaisa       Int            @default(0)
+  penalInterestPaisa      Int            @default(0)
+  status                  ScheduleStatus @default(PENDING)
+
+  loan                    Loan           @relation(fields: [loanId], references: [id], onDelete: Restrict)
+
+  @@unique([loanId, installmentNumber])
+  @@index([loanId])
+  @@index([dueDate])
+  @@map("loan_schedules")
+}
+
+model Payment {
+  id                        String        @id @default(uuid())
+  organizationId            String
+  loanId                    String
+  paymentNumber             String        @unique
+  amountPaisa               Int
+  paymentDate               DateTime
+  paymentMode               PaymentMode
+  referenceNumber           String?
+  status                    PaymentStatus @default(PENDING)
+  allocatedToPrincipalPaisa Int           @default(0)
+  allocatedToInterestPaisa  Int           @default(0)
+  allocatedToPenalPaisa     Int           @default(0)
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+  createdBy                 String?
+  updatedBy                 String?
+
+  organization              Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loan                      Loan          @relation(fields: [loanId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([loanId])
+  @@map("payments")
+}
+
+// ============================================================
+// Bureau, BRE, Collections, Co-Lending, GL
+// ============================================================
+
+model BureauRequest {
+  id              String              @id @default(uuid())
+  organizationId  String
+  applicationId   String
+  customerId      String
+  bureauType      BureauType
+  pullType        BureauPullType
+  requestPayload  Json
+  responsePayload Json?
+  status          BureauRequestStatus @default(INITIATED)
+  costPaisa       Int?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  application     LoanApplication     @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  customer        Customer            @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  bureauResponse  BureauResponse?
+
+  @@index([organizationId])
+  @@index([applicationId])
+  @@map("bureau_requests")
+}
+
+model BureauResponse {
+  id                      String        @id @default(uuid())
+  bureauRequestId         String        @unique
+  applicationId           String
+  score                   Int?
+  totalActiveLoans        Int?
+  totalEmiObligationPaisa Int?
+  maxDpdLast12Months      Int?
+  maxDpdLast24Months      Int?
+  enquiriesLast3Months    Int?
+  enquiriesLast6Months    Int?
+  hasWriteOff             Boolean       @default(false)
+  hasSettlement           Boolean       @default(false)
+  oldestLoanAgeMonths     Int?
+  tradelines              Json          @default("[]")
+  validUntil              DateTime
+  createdAt               DateTime      @default(now())
+
+  bureauRequest           BureauRequest @relation(fields: [bureauRequestId], references: [id], onDelete: Restrict)
+
+  @@index([applicationId])
+  @@map("bureau_responses")
+}
+
+model BreRule {
+  id             String          @id @default(uuid())
+  organizationId String
+  productId      String
+  name           String
+  description    String?
+  category       BreRuleCategory
+  priority       Int
+  condition      Json
+  action         BreRuleAction
+  reason         String
+  isActive       Boolean         @default(true)
+  effectiveFrom  DateTime
+  effectiveTo    DateTime?
+  version        Int             @default(1)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  createdBy      String?
+  updatedBy      String?
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  product        LoanProduct     @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([organizationId, productId, isActive])
+  @@map("bre_rules")
+}
+
+model BreDecision {
+  id                      String           @id @default(uuid())
+  applicationId           String
+  organizationId          String
+  finalDecision           BreFinalDecision
+  approvedInterestRateBps Int?
+  ruleResults             Json             @default("[]")
+  evaluationContext       Json             @default("{}")
+  decidedAt               DateTime         @default(now())
+  overriddenBy            String?
+  overrideReason          String?
+
+  organization            Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loanApplications        LoanApplication[]
+
+  @@index([applicationId])
+  @@index([organizationId])
+  @@map("bre_decisions")
+}
+
+model CollectionTask {
+  id             String                @id @default(uuid())
+  organizationId String
+  loanId         String
+  dpdAtCreation  Int
+  taskType       CollectionTaskType
+  assignedToId   String?
+  scheduledDate  DateTime
+  completedDate  DateTime?
+  disposition    CollectionDisposition?
+  ptpDate        DateTime?
+  ptpAmountPaisa Int?
+  remarks        String?
+  status         CollectionTaskStatus  @default(PENDING)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loan           Loan                  @relation(fields: [loanId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([loanId])
+  @@index([organizationId, status])
+  @@map("collection_tasks")
+}
+
+model DSA {
+  id                String   @id @default(uuid())
+  organizationId    String
+  name              String
+  contactPerson     String
+  phone             String
+  email             String
+  panNumber         String
+  gstNumber         String?
+  dsaCode           String   @unique
+  dsaType           DsaType
+  commissionPercent Decimal  @db.Decimal(5, 2)
+  products          Json     @default("[]")
+  isActive          Boolean  @default(true)
+  empanelmentDate   DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?
+  updatedBy         String?
+  deletedAt         DateTime?
+
+  organization      Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loanApplications  LoanApplication[]
+
+  @@index([organizationId])
+  @@map("dsas")
+}
+
+model CoLendingPartner {
+  id                      String   @id @default(uuid())
+  organizationId          String
+  bankName                String
+  bankCode                String
+  apiEndpoint             String?
+  defaultBankSharePercent Int
+  defaultNbfcSharePercent Int
+  bankInterestRateBps     Int
+  nbfcInterestRateBps     Int
+  maxExposurePaisa        BigInt
+  currentExposurePaisa    BigInt   @default(0)
+  dlgCapPercent           Int      @default(5)
+  dlgUtilizedPaisa        BigInt   @default(0)
+  isActive                Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  organization            Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  allocations             CoLendingAllocation[]
+
+  @@index([organizationId])
+  @@map("co_lending_partners")
+}
+
+model CoLendingAllocation {
+  id                     String          @id @default(uuid())
+  loanId                 String          @unique
+  partnerId              String
+  bankSharePaisa         BigInt
+  nbfcSharePaisa         BigInt
+  blendedInterestRateBps Int
+  escrowAccountNumber    String?
+  status                 CoLendingStatus @default(ALLOCATED)
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  loan                   Loan             @relation(fields: [loanId], references: [id], onDelete: Restrict)
+  partner                CoLendingPartner @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+
+  @@index([partnerId])
+  @@map("co_lending_allocations")
+}
+
+model GlEntry {
+  id                String   @id @default(uuid())
+  organizationId    String
+  branchId          String
+  entryDate         DateTime
+  valueDate         DateTime
+  accountCode       String
+  accountName       String
+  debitAmountPaisa  Int      @default(0)
+  creditAmountPaisa Int      @default(0)
+  narration         String
+  referenceType     String
+  referenceId       String
+  isReversed        Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch            Branch       @relation(fields: [branchId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([organizationId, accountCode])
+  @@index([referenceType, referenceId])
+  @@map("gl_entries")
+}
+
+model Document {
+  id             String       @id @default(uuid())
+  organizationId String
+  applicationId  String?
+  loanId         String?
+  customerId     String
+  documentType   DocumentType
+  fileName       String
+  mimeType       String
+  s3Key          String
+  fileSizeBytes  Int
+  isVerified     Boolean      @default(false)
+  verifiedBy     String?
+  verifiedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  createdBy      String?
+  updatedBy      String?
+  deletedAt      DateTime?
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  application    LoanApplication? @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  customer       Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([applicationId])
+  @@map("documents")
+}

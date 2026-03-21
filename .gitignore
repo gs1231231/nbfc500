@@ -1,0 +1,63 @@
+# ── Dependencies ─────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ── Build output ─────────────────────────────
+dist/
+build/
+*.js.map
+*.d.ts.map
+
+# ── Environment / Secrets ─────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Logs ─────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# ── Testing / Coverage ───────────────────────
+coverage/
+.nyc_output/
+junit.xml
+test-results/
+
+# ── TypeScript ───────────────────────────────
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# ── Prisma ───────────────────────────────────
+# Keep migrations and schema; ignore generated client if bundled separately
+# libs/prisma/src/generated/
+
+# ── OS / Editor ──────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+*~
+
+# ── pnpm ─────────────────────────────────────
+.pnpm-store/
+
+# ── Docker ───────────────────────────────────
+docker-compose.override.yml
+
+# ── Misc ─────────────────────────────────────
+.cache/
+tmp/
+temp/
+*.local

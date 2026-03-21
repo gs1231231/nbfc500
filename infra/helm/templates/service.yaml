@@ -1,0 +1,39 @@
+{{- /*
+BankOS - ClusterIP Service Template
+Creates a ClusterIP Service for each enabled service.
+The api-gateway additionally gets a LoadBalancer if ingress is disabled.
+*/ -}}
+
+{{- range $serviceName, $service := .Values.services }}
+{{- if $service.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $serviceName }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ $serviceName }}
+    {{- with $.Values.global.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: {{ $service.port | quote }}
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ $serviceName }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ $service.port }}
+      targetPort: http
+    - name: metrics
+      protocol: TCP
+      port: 9090
+      targetPort: metrics
+
+{{- end }}
+{{- end }}

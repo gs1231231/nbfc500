@@ -1,0 +1,125 @@
+{{- /*
+BankOS - Ingress Template
+Path-based routing with TLS termination.
+Requires cert-manager and nginx ingress controller.
+*/ -}}
+
+{{- if .Values.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bankos-ingress
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: bankos-ingress
+    {{- with .Values.global.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    # Security headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      more_set_headers "Permissions-Policy: geolocation=(), microphone=(), camera=()";
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{- range .Values.ingress.tls }}
+    - secretName: {{ .secretName }}
+      hosts:
+        {{- range .hosts }}
+        - {{ . }}
+        {{- end }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ .service }}
+                port:
+                  number: {{ .port }}
+          {{- end }}
+    {{- end }}
+
+---
+# ── Internal Ingress (service-to-service) ────────────────────────────────────
+# Allows internal path routing for cross-service calls via internal nginx
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bankos-internal-ingress
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: bankos-internal-ingress
+    {{- with .Values.global.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    kubernetes.io/ingress.class: nginx-internal
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx-internal
+  rules:
+    - host: bankos-internal.bankos.svc.cluster.local
+      http:
+        paths:
+          - path: /loans(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: loan-service
+                port:
+                  number: 3001
+          - path: /collections(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: collection-service
+                port:
+                  number: 3002
+          - path: /payments(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: payment-service
+                port:
+                  number: 3003
+          - path: /notifications(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 3004
+          - path: /underwriting(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: underwriting-service
+                port:
+                  number: 3005
+          - path: /reports(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: reports-service
+                port:
+                  number: 3006
+
+{{- end }}

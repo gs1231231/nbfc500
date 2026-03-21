@@ -1,0 +1,74 @@
+{{- /*
+BankOS - ConfigMap Template
+Non-secret environment variables shared across all services.
+Secrets (DB password, API keys) are in Kubernetes Secrets, not here.
+*/ -}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bankos-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: bankos-config
+    {{- with .Values.global.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+data:
+  # ── Runtime ──────────────────────────────────────────────────────────────────
+  NODE_ENV: {{ .Values.config.NODE_ENV | quote }}
+  TZ: {{ .Values.config.TZ | quote }}
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+
+  # ── Database (non-secret) ─────────────────────────────────────────────────────
+  DB_HOST: {{ .Values.database.host | quote }}
+  DB_PORT: {{ .Values.database.port | quote }}
+  DB_NAME: {{ .Values.database.name | quote }}
+  DB_MAX_CONNECTIONS: {{ .Values.database.maxConnections | quote }}
+  DB_IDLE_TIMEOUT_MS: {{ .Values.database.idleTimeoutMs | quote }}
+
+  # ── Redis (non-secret) ────────────────────────────────────────────────────────
+  REDIS_HOST: {{ .Values.redis.host | quote }}
+  REDIS_PORT: {{ .Values.redis.port | quote }}
+  REDIS_TTL_SECONDS: {{ .Values.redis.ttlSeconds | quote }}
+
+  # ── Integration Adapter Selection ─────────────────────────────────────────────
+  CIBIL_ADAPTER: {{ .Values.config.CIBIL_ADAPTER | quote }}
+  AADHAAR_ADAPTER: {{ .Values.config.AADHAAR_ADAPTER | quote }}
+  PAN_ADAPTER: {{ .Values.config.PAN_ADAPTER | quote }}
+  NACH_ADAPTER: {{ .Values.config.NACH_ADAPTER | quote }}
+  DISBURSEMENT_ADAPTER: {{ .Values.config.DISBURSEMENT_ADAPTER | quote }}
+  UPI_ADAPTER: {{ .Values.config.UPI_ADAPTER | quote }}
+  SMS_ADAPTER: {{ .Values.config.SMS_ADAPTER | quote }}
+  WHATSAPP_ADAPTER: {{ .Values.config.WHATSAPP_ADAPTER | quote }}
+  ESIGN_ADAPTER: {{ .Values.config.ESIGN_ADAPTER | quote }}
+  STORAGE_ADAPTER: {{ .Values.config.STORAGE_ADAPTER | quote }}
+  AA_ADAPTER: {{ .Values.config.AA_ADAPTER | quote }}
+  GST_ADAPTER: {{ .Values.config.GST_ADAPTER | quote }}
+  VAHAN_ADAPTER: {{ .Values.config.VAHAN_ADAPTER | quote }}
+  CERSAI_ADAPTER: {{ .Values.config.CERSAI_ADAPTER | quote }}
+
+  # ── AWS ───────────────────────────────────────────────────────────────────────
+  AWS_REGION: {{ .Values.config.AWS_REGION | quote }}
+
+  # ── Feature Flags ─────────────────────────────────────────────────────────────
+  ENABLE_BRE_OVERRIDE: "false"
+  ENABLE_MANUAL_DISBURSEMENT: "false"
+  ENABLE_COLLECTION_AUTOMATION: "true"
+  ENABLE_AA_CONSENT: "true"
+
+  # ── RBI Compliance ────────────────────────────────────────────────────────────
+  RBI_FAIR_PRACTICES_CODE_VERSION: "2015"
+  CERSAI_REGISTRATION_SLA_DAYS: "30"
+  BUREAU_PULL_VALIDITY_DAYS: "90"
+  KYC_EXPIRY_YEARS: "10"
+
+  # ── Rate Limiting ─────────────────────────────────────────────────────────────
+  RATE_LIMIT_WINDOW_MS: "60000"
+  RATE_LIMIT_MAX_REQUESTS: "100"
+
+  # ── Monitoring ────────────────────────────────────────────────────────────────
+  METRICS_ENABLED: "true"
+  METRICS_PORT: "9090"
+  HEALTH_CHECK_PORT: "3000"
