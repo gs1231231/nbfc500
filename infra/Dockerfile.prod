@@ -53,4 +53,4 @@ COPY --from=builder --chown=nestjs:nodejs /app/libs/database/prisma ./libs/datab
 USER nestjs
 EXPOSE 3000
 
-CMD ["node", "dist/apps/api-gateway/main.prod"]
+CMD ["node", "dist/apps/api-gateway/main"]
