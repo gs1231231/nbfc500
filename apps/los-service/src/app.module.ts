@@ -8,6 +8,7 @@ import { DocumentModule } from './document/document.module';
 import { SanctionModule } from './sanction/sanction.module';
 import { DisbursementModule } from './disbursement/disbursement.module';
 import { CommissionModule } from './commission/commission.module';
+import { LeadModule } from './lead/lead.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { CommissionModule } from './commission/commission.module';
     SanctionModule,
     DisbursementModule,
     CommissionModule,
+    LeadModule,
   ],
 })
 export class AppModule {}

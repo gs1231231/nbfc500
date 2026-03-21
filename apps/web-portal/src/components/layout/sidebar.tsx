@@ -14,11 +14,13 @@ import {
   Settings,
   Building2,
   X,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/leads/new", label: "New Lead", icon: UserPlus },
   { href: "/applications", label: "Applications", icon: FileText },
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/loans", label: "Loans", icon: CreditCard },

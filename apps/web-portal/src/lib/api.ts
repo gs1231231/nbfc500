@@ -58,6 +58,25 @@ export const authApi = {
   logout: () => api.post("/auth/logout", {}),
 };
 
+// Leads (Aadhaar OTP-based lead creation)
+export const leadsApi = {
+  sendOtp: (aadhaarNumber: string) =>
+    api.post<{ txnId: string; maskedAadhaar: string }>("/leads/aadhaar/send-otp", {
+      aadhaarNumber,
+    }),
+  verifyOtp: (payload: {
+    txnId: string;
+    otp: string;
+    aadhaarNumber: string;
+    productId: string;
+    branchId: string;
+    requestedAmountPaisa: number;
+    requestedTenureMonths: number;
+  }) => api.post<LeadCreationResult>("/leads/aadhaar/verify-otp", payload),
+  getStatus: (applicationId: string) =>
+    api.get<LeadCreationResult>(`/leads/${applicationId}`),
+};
+
 // Applications
 export const applicationsApi = {
   list: (params?: Record<string, string>) => {
@@ -257,4 +276,30 @@ export interface StatusHistory {
   timestamp: string;
   actor: string;
   comment?: string;
+}
+
+export interface LeadCreationResult {
+  customer: {
+    id: string;
+    customerNumber: string;
+    fullName: string;
+    dateOfBirth: string;
+    gender: string;
+    kycStatus: string;
+    currentAddressLine1?: string;
+    currentAddressLine2?: string;
+    currentCity?: string;
+    currentState?: string;
+    currentPincode?: string;
+  };
+  application: {
+    id: string;
+    applicationNumber: string;
+    status: string;
+    requestedAmountPaisa: number;
+    requestedTenureMonths: number;
+    product?: { name: string; code: string; productType: string };
+    branch?: { name: string; code: string };
+  };
+  isExisting: boolean;
 }

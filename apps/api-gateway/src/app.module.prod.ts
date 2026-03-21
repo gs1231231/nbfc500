@@ -34,6 +34,7 @@ import { DocumentModule } from '../../los-service/src/document/document.module';
 import { SanctionModule } from '../../los-service/src/sanction/sanction.module';
 import { DisbursementModule } from '../../los-service/src/disbursement/disbursement.module';
 import { CommissionModule } from '../../los-service/src/commission/commission.module';
+import { LeadModule } from '../../los-service/src/lead/lead.module';
 
 // ── LMS (Loan Management System) modules ──────────────────────────────────
 import { PaymentModule as LmsPaymentModule } from '../../lms-service/src/payment/payment.module';
@@ -91,6 +92,7 @@ import { CoLendingModule } from '../../colending-service/src/colending/colending
     SanctionModule,
     DisbursementModule,
     CommissionModule,
+    LeadModule,
 
     // ── LMS
     LmsPaymentModule,
