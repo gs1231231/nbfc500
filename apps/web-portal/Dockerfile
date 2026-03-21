@@ -14,11 +14,8 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-# Use npm here — web-portal is a standalone Next.js app (not in the pnpm
-# monorepo workspace), so it ships its own package-lock.json.
-RUN npm ci --omit=dev --ignore-scripts && \
-    # Re-install with dev deps needed for the build step
-    npm ci --ignore-scripts
+# Install dependencies (use npm install since package-lock.json may not exist)
+RUN npm install --legacy-peer-deps
 
 # ── Stage 2: build ────────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
