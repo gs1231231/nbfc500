@@ -50,7 +50,8 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 # Next.js standalone bundles everything needed into .next/standalone —
 # we only need to add the public/ and static asset directories on top.
-COPY --from=builder --chown=nextjs:nodejs /app/public                    ./public
+# public/ may not exist — create empty dir as fallback
+RUN mkdir -p ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone          ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static              ./.next/static
 
