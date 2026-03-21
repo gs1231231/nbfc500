@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -51,7 +51,7 @@ export const api = {
 // Auth
 export const authApi = {
   login: (email: string, password: string) =>
-    api.post<{ token: string; user: { id: string; name: string; email: string; role: string } }>(
+    api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; roles: string[] } }>(
       "/auth/login",
       { email, password }
     ),

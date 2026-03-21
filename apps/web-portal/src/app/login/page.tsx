@@ -22,16 +22,11 @@ export default function LoginPage() {
 
     try {
       const res = await authApi.login(email, password);
-      localStorage.setItem("bankos_token", res.token);
-      router.push("/");
+      localStorage.setItem("bankos_token", res.accessToken);
+      localStorage.setItem("bankos_user", JSON.stringify(res.user));
+      router.push("/applications");
     } catch (err: unknown) {
-      // For demo: allow any login with mock credentials
-      if (email && password) {
-        localStorage.setItem("bankos_token", "mock-jwt-token-for-demo");
-        router.push("/");
-        return;
-      }
-      setError(err instanceof Error ? err.message : "Login failed. Please try again.");
+      setError(err instanceof Error ? err.message : "Invalid credentials. Try: rajesh.kumar@growthfinance.in / Test@1234");
     } finally {
       setLoading(false);
     }
@@ -121,7 +116,7 @@ export default function LoginPage() {
 
           <div className="mt-6 p-3 rounded-md bg-gray-50 border border-gray-200">
             <p className="text-xs text-gray-500 text-center">
-              Demo: Use any email + password to sign in
+              Demo: rajesh.kumar@growthfinance.in / Test@1234
             </p>
           </div>
         </div>
