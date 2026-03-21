@@ -58,7 +58,7 @@ describe('Co-Lending Flow E2E', () => {
 
   const BANK_SHARE_PERCENT = 80;
   const NBFC_SHARE_PERCENT = 20;
-  const LOAN_AMOUNT = 100_000_000_000; // Rs 10L (as BigInt in paisa)
+  const LOAN_AMOUNT = 100_000_000; // Rs 10L in paisa (10,00,000 rupees × 100 paisa)
   const BANK_RATE_BPS = 900;   // 9%
   const NBFC_RATE_BPS = 1400;  // 14%
 
@@ -121,6 +121,8 @@ describe('Co-Lending Flow E2E', () => {
   describe('Phase 2: Loan Creation for Co-Lending', () => {
     it('creates customer and co-lending application', async () => {
       const ts = Date.now();
+      const panDigits = String(Math.floor(Math.random() * 9000) + 1000); // random 4-digit number 1000-9999
+      const pan = `SLWPN${panDigits}M`; // 5 letters + 4 digits + 1 letter = 10 chars, unique per run
       const customer = await prisma.customer.create({
         data: {
           organizationId: orgId,
@@ -131,7 +133,7 @@ describe('Co-Lending Flow E2E', () => {
           fullName: 'Suresh Nair',
           dateOfBirth: new Date('1982-04-20'),
           gender: 'MALE',
-          panNumber: 'SLWPN3456M',
+          panNumber: pan,
           phone: `98765${String(ts).slice(-5)}`,
           employmentType: 'SALARIED',
           monthlyIncomePaisa: 20_000_000,
@@ -142,12 +144,11 @@ describe('Co-Lending Flow E2E', () => {
       });
       customerId = customer.id;
 
-      const appCount = await prisma.loanApplication.count({ where: { organizationId: orgId } });
       const application = await prisma.loanApplication.create({
         data: {
           organizationId: orgId,
           branchId,
-          applicationNumber: `GROWTH/CL/${String(appCount + 1).padStart(6, '0')}`,
+          applicationNumber: `GROWTH/CL/${ts}`,
           customerId,
           productId,
           requestedAmountPaisa: Number(LOAN_AMOUNT),
@@ -166,12 +167,11 @@ describe('Co-Lending Flow E2E', () => {
     });
 
     it('creates loan with blended interest rate', async () => {
-      const loanCount = await prisma.loan.count({ where: { organizationId: orgId } });
       const loan = await prisma.loan.create({
         data: {
           organizationId: orgId,
           branchId,
-          loanNumber: `GROWTH/CL/${String(loanCount + 1).padStart(6, '0')}`,
+          loanNumber: `GROWTH/CL/${Date.now()}`,
           applicationId,
           customerId,
           productId,

@@ -362,8 +362,11 @@ describe('CIBIL TUEF Submission E2E', () => {
     });
 
     it('PAN field is 10 characters with valid format', () => {
+      // Borrower segment layout: PN(2) + name(26) + dob(8) + gender(1) + incomeIndicator(1) + annualIncome(9) + PAN(10)
+      // PAN offset = 2 + 26 + 8 + 1 + 1 + 9 = 47
+      const PAN_OFFSET = 47;
       for (const segment of tuefRecord.borrowerSegments) {
-        const pan = segment.substring(40, 50);
+        const pan = segment.substring(PAN_OFFSET, PAN_OFFSET + 10);
         // PAN should be 10 chars
         expect(pan).toHaveLength(10);
         // Valid PAN format: 5 letters + 4 digits + 1 letter

@@ -26,6 +26,15 @@ describe('Origination Flow E2E', () => {
   let productId: string;
   let userId: string;
 
+  // Unique suffix per test run to avoid constraint violations on repeated runs
+  const testId = Date.now().toString(36); // unique per run for customerNumber
+  // Combine timestamp and random number to get a unique 4-digit numeric suffix
+  // PAN format: 5 uppercase letters + 4 digits + 1 uppercase letter (10 chars total)
+  const panSuffix = String(Math.floor(Math.random() * 9000) + 1000); // random 4-digit number 1000-9999
+  const pan1 = `BWRPS${panSuffix}K`; // B-range → score 720-850
+  const pan2 = `QRTPK${panSuffix}J`; // Q-range → score 300-500
+  const pan3 = `HKLPM${panSuffix}R`; // H-range → score 650-720
+
   beforeAll(async () => {
     // Get seeded org, branch, product, user
     const org = await prisma.organization.findFirst({
@@ -62,15 +71,15 @@ describe('Origination Flow E2E', () => {
       const customer = await prisma.customer.create({
         data: {
           organizationId: orgId,
-          customerNumber: `GROWTH/CUST/E2E001`,
+          customerNumber: `GROWTH/CUST/E2E1_${testId}`,
           customerType: 'INDIVIDUAL',
           firstName: 'Bharath',
           lastName: 'Sharma',
           fullName: 'Bharath Sharma',
           dateOfBirth: new Date('1990-05-15'),
           gender: 'MALE',
-          panNumber: 'BWRPS1234K', // B-range PAN → score 720-850
-          phone: '9876543001',
+          panNumber: pan1, // B-range PAN → score 720-850
+          phone: `9${Math.floor(100000000 + Math.random() * 899999999)}`,
           employmentType: 'SALARIED',
           monthlyIncomePaisa: 7500000, // Rs 75,000
           kycStatus: 'VERIFIED',
@@ -80,20 +89,15 @@ describe('Origination Flow E2E', () => {
       });
       customerId = customer.id;
       expect(customer.kycStatus).toBe('VERIFIED');
-      expect(customer.panNumber).toBe('BWRPS1234K');
+      expect(customer.panNumber).toBe(pan1);
     });
 
     it('Step 2: Create loan application (PL, 5L, 36 months)', async () => {
-      const appCount = await prisma.loanApplication.count({
-        where: { organizationId: orgId },
-      });
-      const appNumber = `GROWTH/PL/2026/${String(appCount + 1).padStart(6, '0')}`;
-
       const application = await prisma.loanApplication.create({
         data: {
           organizationId: orgId,
           branchId,
-          applicationNumber: appNumber,
+          applicationNumber: `GROWTH/PL/E2E1_${testId}`,
           customerId,
           productId,
           requestedAmountPaisa: 50000000, // Rs 5L
@@ -287,15 +291,15 @@ describe('Origination Flow E2E', () => {
       const customer = await prisma.customer.create({
         data: {
           organizationId: orgId,
-          customerNumber: `GROWTH/CUST/E2E002`,
+          customerNumber: `GROWTH/CUST/E2E2_${testId}`,
           customerType: 'INDIVIDUAL',
           firstName: 'Qadir',
           lastName: 'Patel',
           fullName: 'Qadir Patel',
           dateOfBirth: new Date('1985-08-20'),
           gender: 'MALE',
-          panNumber: 'QRTPK4567J', // Q-range → score 300-500
-          phone: '9876543002',
+          panNumber: pan2, // Q-range → score 300-500
+          phone: `9${Math.floor(100000000 + Math.random() * 899999999)}`,
           employmentType: 'SALARIED',
           monthlyIncomePaisa: 4000000,
           kycStatus: 'VERIFIED',
@@ -307,16 +311,11 @@ describe('Origination Flow E2E', () => {
     });
 
     it('Step 2: Create application and advance to BUREAU_CHECK', async () => {
-      const appCount = await prisma.loanApplication.count({
-        where: { organizationId: orgId },
-      });
-      const appNumber = `GROWTH/PL/2026/${String(appCount + 1).padStart(6, '0')}`;
-
       const application = await prisma.loanApplication.create({
         data: {
           organizationId: orgId,
           branchId,
-          applicationNumber: appNumber,
+          applicationNumber: `GROWTH/PL/E2E2_${testId}`,
           customerId,
           productId,
           requestedAmountPaisa: 30000000,
@@ -338,7 +337,7 @@ describe('Origination Flow E2E', () => {
           customerId,
           bureauType: 'CIBIL',
           pullType: 'HARD',
-          requestPayload: { pan: 'QRTPK4567J' },
+          requestPayload: { pan: pan2 },
           status: 'SUCCESS',
           costPaisa: 5000,
         },
@@ -421,15 +420,15 @@ describe('Origination Flow E2E', () => {
       const customer = await prisma.customer.create({
         data: {
           organizationId: orgId,
-          customerNumber: `GROWTH/CUST/E2E003`,
+          customerNumber: `GROWTH/CUST/E2E3_${testId}`,
           customerType: 'INDIVIDUAL',
           firstName: 'Harsh',
           lastName: 'Mehta',
           fullName: 'Harsh Mehta',
           dateOfBirth: new Date('1988-03-10'),
           gender: 'MALE',
-          panNumber: 'HKLPM5678R', // H-range → score 650-720
-          phone: '9876543003',
+          panNumber: pan3, // H-range → score 650-720
+          phone: `9${Math.floor(100000000 + Math.random() * 899999999)}`,
           employmentType: 'SELF_EMPLOYED_PROFESSIONAL',
           monthlyIncomePaisa: 6000000,
           kycStatus: 'VERIFIED',
@@ -441,16 +440,11 @@ describe('Origination Flow E2E', () => {
     });
 
     it('Step 2: Create application and add bureau response (score 635)', async () => {
-      const appCount = await prisma.loanApplication.count({
-        where: { organizationId: orgId },
-      });
-      const appNumber = `GROWTH/PL/2026/${String(appCount + 1).padStart(6, '0')}`;
-
       const application = await prisma.loanApplication.create({
         data: {
           organizationId: orgId,
           branchId,
-          applicationNumber: appNumber,
+          applicationNumber: `GROWTH/PL/E2E3_${testId}`,
           customerId,
           productId,
           requestedAmountPaisa: 40000000,
@@ -470,7 +464,7 @@ describe('Origination Flow E2E', () => {
           customerId,
           bureauType: 'CIBIL',
           pullType: 'HARD',
-          requestPayload: { pan: 'HKLPM5678R' },
+          requestPayload: { pan: pan3 },
           status: 'SUCCESS',
           costPaisa: 5000,
         },
