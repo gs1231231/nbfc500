@@ -93,7 +93,7 @@ export class MockGstPortalAdapter implements IGstPortalAdapter {
     const stateCode = gstin.slice(0, 2);
     const stateName = STATE_CODES[stateCode] ?? 'Unknown State';
 
-    const filingHistory: GstReturnFiling[] = request.includeFiling
+    const filingHistory: GstReturnFiling[] | undefined = request.includeFiling
       ? [
           { returnType: 'GSTR3B', period: '022025', status: 'FILED', filedOn: '2025-03-20' },
           { returnType: 'GSTR1', period: '022025', status: 'FILED', filedOn: '2025-03-11' },

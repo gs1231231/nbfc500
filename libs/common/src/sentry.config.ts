@@ -10,7 +10,6 @@
  */
 
 import * as Sentry from '@sentry/node';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -117,12 +116,7 @@ export function initSentry(serviceNameOrOptions: string | SentryOptions): void {
     // Profiling (requires @sentry/profiling-node)
     profilesSampleRate: options.profilesSampleRate ?? DEFAULT_PROFILES_SAMPLE_RATE,
 
-    integrations: [
-      // Node.js native integrations
-      ...Sentry.autoDiscoverNodePerformanceMonitoringIntegrations(),
-      // CPU profiling
-      nodeProfilingIntegration(),
-    ],
+    integrations: [],
 
     // Tag all events with service name and environment
     initialScope: {
@@ -135,7 +129,7 @@ export function initSentry(serviceNameOrOptions: string | SentryOptions): void {
     },
 
     // ── Event processing hooks ─────────────────────────────────────────────
-    beforeSend(event) {
+    beforeSend(event: any) {
       // Scrub PII from request data
       if (event.request?.data) {
         try {
@@ -167,7 +161,7 @@ export function initSentry(serviceNameOrOptions: string | SentryOptions): void {
       return event;
     },
 
-    beforeSendTransaction(transaction) {
+    beforeSendTransaction(transaction: any) {
       // Drop health check and metrics transactions from performance data
       if (
         transaction.transaction?.includes('/health') ||
@@ -205,7 +199,7 @@ export function captureError(
     extra?: Record<string, unknown>;
   },
 ): string {
-  return Sentry.withScope((scope) => {
+  return Sentry.withScope((scope: any) => {
     if (context?.userId) scope.setUser({ id: context.userId });
     if (context?.organizationId) scope.setTag('organizationId', context.organizationId);
     if (context?.loanId) scope.setTag('loanId', context.loanId);
