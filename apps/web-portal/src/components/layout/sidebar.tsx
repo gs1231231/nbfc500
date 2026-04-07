@@ -61,7 +61,7 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
         <div className="flex h-16 items-center justify-between px-6 border-b border-gray-700">
           <div className="flex items-center gap-2">
             <Building2 className="h-7 w-7 text-blue-400" />
-            <span className="text-xl font-bold text-white">BankOS</span>
+            <span className="text-xl font-bold text-white">NBFC Sathi</span>
           </div>
           <button
             onClick={onClose}
@@ -104,7 +104,7 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
 
         {/* Footer */}
         <div className="border-t border-gray-700 p-4">
-          <p className="text-xs text-gray-500 text-center">BankOS v1.0.0</p>
+          <p className="text-xs text-gray-500 text-center">NBFC Sathi v1.0.0</p>
         </div>
       </aside>
     </>

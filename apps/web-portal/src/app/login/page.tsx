@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Loader2, Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
+import { Shield, Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authApi } from "@/lib/api";
@@ -26,7 +27,11 @@ export default function LoginPage() {
       localStorage.setItem("bankos_user", JSON.stringify(res.user));
       router.push("/applications");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Invalid credentials. Try: rajesh.kumar@growthfinance.in / Test@1234");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Invalid credentials. Try: rajesh.kumar@growthfinance.in / Test@1234"
+      );
     } finally {
       setLoading(false);
     }
@@ -35,13 +40,26 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* Back to Home */}
+        <div className="mb-6">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Home
+          </Link>
+        </div>
+
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 mb-4">
-            <Building2 className="h-9 w-9 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-white">BankOS</h1>
-          <p className="text-gray-400 mt-1">NBFC Admin Portal</p>
+          <Link href="/" className="inline-flex flex-col items-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 mb-4">
+              <Shield className="h-9 w-9 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-white">NBFC Sathi</h1>
+            <p className="text-gray-400 mt-1">Lending OS for Indian NBFCs</p>
+          </Link>
         </div>
 
         {/* Card */}
@@ -64,7 +82,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@bankos.in"
+                placeholder="admin@yourcompany.in"
                 required
                 autoComplete="email"
               />
@@ -106,7 +124,7 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Signing in...
+                  Signing in…
                 </>
               ) : (
                 "Sign in"
@@ -119,10 +137,17 @@ export default function LoginPage() {
               Demo: rajesh.kumar@growthfinance.in / Test@1234
             </p>
           </div>
+
+          <p className="mt-5 text-center text-sm text-gray-500">
+            Don't have an account?{" "}
+            <Link href="/signup" className="text-blue-600 font-medium hover:underline">
+              Sign Up
+            </Link>
+          </p>
         </div>
 
         <p className="text-center text-xs text-gray-500 mt-6">
-          © 2024 BankOS. All rights reserved.
+          © 2025 NBFC Sathi. All rights reserved.
         </p>
       </div>
     </div>
