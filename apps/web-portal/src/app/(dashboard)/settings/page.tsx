@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Settings, Bell, Shield, Building, Users, Database } from "lucide-react";
+import Link from "next/link";
+import { Settings, Bell, Shield, Building, Users, Database, Sliders } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ const settingsSections = [
   { id: "organization", label: "Organization", icon: Building },
   { id: "users", label: "Users & Roles", icon: Users },
   { id: "integrations", label: "Integrations", icon: Database },
+  { id: "custom-fields", label: "Custom Fields", icon: Sliders, href: "/settings/custom-fields" },
 ];
 
 const mockUsers = [
@@ -48,15 +50,27 @@ export default function SettingsPage() {
               <nav className="space-y-1">
                 {settingsSections.map((section) => {
                   const Icon = section.icon;
+                  const isActive = activeSection === section.id;
+                  const className = `w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors text-left ${
+                    isActive
+                      ? "bg-blue-50 text-blue-700"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`;
+
+                  if ("href" in section && section.href) {
+                    return (
+                      <Link key={section.id} href={section.href} className={className}>
+                        <Icon className="h-4 w-4" />
+                        {section.label}
+                      </Link>
+                    );
+                  }
+
                   return (
                     <button
                       key={section.id}
                       onClick={() => setActiveSection(section.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors text-left ${
-                        activeSection === section.id
-                          ? "bg-blue-50 text-blue-700"
-                          : "text-gray-600 hover:bg-gray-50"
-                      }`}
+                      className={className}
                     >
                       <Icon className="h-4 w-4" />
                       {section.label}
@@ -71,6 +85,26 @@ export default function SettingsPage() {
         {/* Content */}
         <div className="flex-1 min-w-0">
           {activeSection === "general" && (
+            <>
+            {/* Custom Fields feature card */}
+            <Link href="/settings/custom-fields" className="block mb-4">
+              <Card className="border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="h-10 w-10 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+                    <Sliders className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-blue-900">Manage Custom Fields</p>
+                    <p className="text-xs text-blue-700 mt-0.5">
+                      Define extra fields for Customers, Loans, Applications and more — they auto-appear in forms without code changes.
+                    </p>
+                  </div>
+                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white flex-shrink-0">
+                    Open
+                  </Button>
+                </CardContent>
+              </Card>
+            </Link>
             <Card>
               <CardHeader>
                 <CardTitle>General Settings</CardTitle>
@@ -107,6 +141,7 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
+            </>
           )}
 
           {activeSection === "notifications" && (

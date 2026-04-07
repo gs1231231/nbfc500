@@ -28,6 +28,8 @@ import { WorkflowModule } from '@bankos/workflow';
 import { HealthModule } from './health/health.module';
 import { AuthModule as GatewayAuthModule } from './auth/auth.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { PartnerModule } from './partner-api/partner.module';
+import { RealtimeModule } from './realtime/realtime.module';
 
 // ── LOS (Loan Origination System) modules ─────────────────────────────────
 import { ApplicationModule } from '../../los-service/src/application/application.module';
@@ -37,6 +39,8 @@ import { SanctionModule } from '../../los-service/src/sanction/sanction.module';
 import { DisbursementModule } from '../../los-service/src/disbursement/disbursement.module';
 import { CommissionModule } from '../../los-service/src/commission/commission.module';
 import { LeadModule } from '../../los-service/src/lead/lead.module';
+import { AaModule } from '../../los-service/src/account-aggregator/aa.module';
+import { DocaiModule } from '../../los-service/src/document-ai/docai.module';
 
 // ── LMS (Loan Management System) modules ──────────────────────────────────
 import { PaymentModule as LmsPaymentModule } from '../../lms-service/src/payment/payment.module';
@@ -45,9 +49,11 @@ import { AccrualModule } from '../../lms-service/src/accrual/accrual.module';
 import { OtsModule } from '../../lms-service/src/ots/ots.module';
 import { WriteoffModule } from '../../lms-service/src/writeoff/writeoff.module';
 import { LoanModule } from '../../lms-service/src/loan/loan.module';
+import { GlModule } from '../../lms-service/src/gl/gl.module';
 
 // ── BRE (Business Rule Engine) ────────────────────────────────────────────
 import { BreModule } from '../../bre-service/src/bre.module';
+import { MlModule } from '../../bre-service/src/ml-scoring/ml.module';
 
 // ── Collection ─────────────────────────────────────────────────────────────
 import { CollectionModule } from '../../collection-service/src/collection/collection.module';
@@ -86,6 +92,8 @@ import { CoLendingModule } from '../../colending-service/src/colending/colending
     HealthModule,
     GatewayAuthModule,
     DashboardModule,
+    PartnerModule,
+    RealtimeModule,
 
     // ── LOS
     ApplicationModule,
@@ -95,6 +103,8 @@ import { CoLendingModule } from '../../colending-service/src/colending/colending
     DisbursementModule,
     CommissionModule,
     LeadModule,
+    AaModule,
+    DocaiModule,
 
     // ── LMS
     LmsPaymentModule,
@@ -103,9 +113,11 @@ import { CoLendingModule } from '../../colending-service/src/colending/colending
     OtsModule,
     WriteoffModule,
     LoanModule,
+    GlModule,
 
     // ── BRE
     BreModule,
+    MlModule,
 
     // ── Collection
     CollectionModule,

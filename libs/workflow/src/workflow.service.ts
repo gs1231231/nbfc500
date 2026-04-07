@@ -464,6 +464,174 @@ export class WorkflowService {
     return breaches;
   }
 
+  // ── Visual Builder extras ─────────────────────────────────────────────────────
+
+  /**
+   * Duplicate a workflow template with a new name.
+   */
+  async cloneWorkflow(
+    organizationId: string,
+    templateId: string,
+    newName: string,
+  ): Promise<WorkflowTemplate> {
+    const source = await this.prisma.workflowTemplate.findFirst({
+      where: { id: templateId, organizationId },
+    });
+    if (!source) {
+      throw new NotFoundException(`Workflow template ${templateId} not found`);
+    }
+
+    const clone = await this.prisma.workflowTemplate.create({
+      data: {
+        organizationId,
+        name: newName,
+        productId: source.productId,
+        isDefault: false, // clone is never default
+        isActive: true,
+        stages: source.stages as import('@prisma/client').Prisma.InputJsonValue,
+        transitions: source.transitions as import('@prisma/client').Prisma.InputJsonValue,
+        createdBy: source.createdBy,
+        updatedBy: source.updatedBy,
+      },
+    });
+
+    return this.mapRecord(clone);
+  }
+
+  /**
+   * Validate a workflow definition without persisting it.
+   * Checks:
+   *   - No orphan stages (every stage code referenced in transitions must exist)
+   *   - All transitions reference valid stage codes
+   *   - At least one terminal stage
+   *   - No cycles in required transitions
+   */
+  validateWorkflow(
+    stages: WorkflowStage[],
+    transitions: WorkflowTransition[],
+  ): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    const stageCodes = new Set(stages.map((s) => s.code));
+
+    // Must have at least one stage
+    if (stages.length === 0) {
+      errors.push('Workflow must have at least one stage');
+    }
+
+    // At least one terminal stage
+    const terminalStages = stages.filter((s) => s.isTerminal);
+    if (terminalStages.length === 0) {
+      errors.push('Workflow must have at least one terminal stage (isTerminal: true)');
+    }
+
+    // Transitions reference valid stage codes
+    for (const t of transitions) {
+      if (!stageCodes.has(t.from)) {
+        errors.push(`Transition references unknown "from" stage: "${t.from}"`);
+      }
+      if (!stageCodes.has(t.to)) {
+        errors.push(`Transition references unknown "to" stage: "${t.to}"`);
+      }
+    }
+
+    // Orphan stages: stages that are neither a starting point nor reachable via any transition
+    // (skip for first stage — it's the entry point)
+    if (stages.length > 1) {
+      const reachable = new Set<string>();
+      // BFS from the first stage
+      const firstStageCode = stages.sort((a, b) => a.displayOrder - b.displayOrder)[0]?.code;
+      if (firstStageCode) {
+        const queue = [firstStageCode];
+        reachable.add(firstStageCode);
+        while (queue.length > 0) {
+          const current = queue.shift()!;
+          for (const t of transitions) {
+            if (t.from === current && !reachable.has(t.to)) {
+              reachable.add(t.to);
+              queue.push(t.to);
+            }
+          }
+        }
+        for (const code of stageCodes) {
+          if (!reachable.has(code)) {
+            errors.push(`Stage "${code}" is unreachable from the first stage`);
+          }
+        }
+      }
+    }
+
+    // Cycle detection via DFS on transition graph
+    const visited = new Set<string>();
+    const inStack = new Set<string>();
+
+    const hasCycle = (node: string): boolean => {
+      visited.add(node);
+      inStack.add(node);
+      for (const t of transitions) {
+        if (t.from === node) {
+          if (!visited.has(t.to)) {
+            if (hasCycle(t.to)) return true;
+          } else if (inStack.has(t.to)) {
+            return true;
+          }
+        }
+      }
+      inStack.delete(node);
+      return false;
+    };
+
+    for (const code of stageCodes) {
+      if (!visited.has(code)) {
+        if (hasCycle(code)) {
+          errors.push(`Cycle detected in workflow transitions (involving stage "${code}")`);
+          break;
+        }
+      }
+    }
+
+    return { valid: errors.length === 0, errors };
+  }
+
+  /**
+   * Return per-stage application counts for a specific workflow template.
+   */
+  async getWorkflowStats(
+    organizationId: string,
+    templateId: string,
+  ): Promise<{
+    templateId: string;
+    templateName: string;
+    stageCounts: Array<{ stageCode: string; stageName: string; count: number }>;
+    total: number;
+  }> {
+    const template = await this.prisma.workflowTemplate.findFirst({
+      where: { id: templateId, organizationId },
+    });
+    if (!template) {
+      throw new NotFoundException(`Workflow template ${templateId} not found`);
+    }
+
+    const stages = template.stages as unknown as WorkflowStage[];
+
+    // Count applications currently in each workflow stage
+    const stageCounts = await Promise.all(
+      stages.map(async (stage) => {
+        const count = await this.prisma.loanApplication.count({
+          where: {
+            organizationId,
+            deletedAt: null,
+            currentWorkflowStage: stage.code,
+          },
+        });
+        return { stageCode: stage.code, stageName: stage.name, count };
+      }),
+    );
+
+    const total = stageCounts.reduce((sum, s) => sum + s.count, 0);
+
+    return { templateId, templateName: template.name, stageCounts, total };
+  }
+
   // ── Seed helpers ─────────────────────────────────────────────────────────────
 
   async seedDefaultWorkflows(organizationId: string, createdBy?: string): Promise<void> {

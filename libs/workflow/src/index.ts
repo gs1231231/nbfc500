@@ -1,7 +1,7 @@
 export { WorkflowModule } from './workflow.module';
 export { WorkflowService } from './workflow.service';
 export { WorkflowController, ApplicationWorkflowController } from './workflow.controller';
-export { CreateWorkflowDto, UpdateWorkflowDto, TransitionApplicationDto } from './workflow.dto';
+export { CreateWorkflowDto, UpdateWorkflowDto, TransitionApplicationDto, CloneWorkflowDto, ValidateWorkflowDto } from './workflow.dto';
 export type {
   WorkflowStage,
   WorkflowTransition,

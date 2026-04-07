@@ -137,7 +137,50 @@ export const reportsApi = {
   portfolio: () => api.get<PortfolioSummary>("/reports/portfolio"),
 };
 
+// Custom Fields
+export const customFieldsApi = {
+  getFormSchema: (entityType: string) =>
+    api.get<FormSchema>(`/custom-fields/form-schema?entityType=${entityType}`),
+  list: (entityType?: string) => {
+    const qs = entityType ? `?entityType=${entityType}` : "";
+    return api.get<FieldDefinition[]>(`/custom-fields${qs}`);
+  },
+  create: (data: Partial<FieldDefinition>) =>
+    api.post<FieldDefinition>("/custom-fields", data),
+  update: (id: string, data: Partial<FieldDefinition>) =>
+    api.patch<FieldDefinition>(`/custom-fields/${id}`, data),
+  deactivate: (id: string) => api.delete(`/custom-fields/${id}`),
+};
+
 // Types
+export interface FieldDefinition {
+  id: string;
+  entityType: string;
+  fieldKey: string;
+  fieldLabel: string;
+  fieldType: string;
+  isRequired: boolean;
+  isSearchable: boolean;
+  isVisibleInList: boolean;
+  enumOptions?: string[];
+  defaultValue?: string;
+  validationRule?: {
+    min?: number;
+    max?: number;
+    regex?: string;
+    minLength?: number;
+    maxLength?: number;
+  };
+  displayOrder: number;
+  sectionName?: string;
+  isActive: boolean;
+}
+
+export interface FormSchema {
+  sections: { name: string; fields: FieldDefinition[] }[];
+  ungrouped: FieldDefinition[];
+}
+
 export interface Application {
   id: string;
   applicationNumber: string;

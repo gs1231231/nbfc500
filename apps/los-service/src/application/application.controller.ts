@@ -252,6 +252,7 @@ export class ApplicationController {
   })
   @ApiParam({ name: 'id', description: 'Loan application UUID', type: 'string' })
   @ApiQuery({ name: 'orgId', required: true, description: 'Organization ID' })
+  @ApiQuery({ name: 'userId', required: false, description: 'Acting user ID (for role checks)' })
   @ApiBody({ type: TransitionApplicationDto })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -268,8 +269,41 @@ export class ApplicationController {
   async transition(
     @Param('id', ParseUUIDPipe) id: string,
     @Query('orgId') orgId: string,
+    @Query('userId') userId: string | undefined,
     @Body() dto: TransitionApplicationDto,
   ) {
-    return this.applicationService.transition(orgId, id, dto);
+    return this.applicationService.transition(orgId, id, dto, userId);
+  }
+
+  // ============================================================
+  // GET /api/v1/applications/:id/available-transitions
+  // ============================================================
+
+  @Get(':id/available-transitions')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get available workflow transitions for an application',
+    description:
+      'Returns the list of stages the specified user can immediately transition to ' +
+      'from the application\'s current stage. ' +
+      'Uses the workflow engine when a template exists; falls back to static transitions.',
+  })
+  @ApiParam({ name: 'id', description: 'Loan application UUID', type: 'string' })
+  @ApiQuery({ name: 'orgId', required: true, description: 'Organization ID' })
+  @ApiQuery({ name: 'userId', required: true, description: 'Acting user ID (for role checks)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'List of available transitions',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Application not found',
+  })
+  async availableTransitions(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('orgId') orgId: string,
+    @Query('userId') userId: string,
+  ) {
+    return this.applicationService.getAvailableTransitions(orgId, id, userId);
   }
 }

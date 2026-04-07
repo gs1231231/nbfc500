@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@bankos/database';
 import { ApplicationStatus, KycStatus, SourceType } from '@bankos/common';
+import { WorkflowService } from '@bankos/workflow';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 import { FilterApplicationDto } from './dto/filter-application.dto';
@@ -69,7 +70,10 @@ const EDITABLE_STAGES = new Set<ApplicationStatus>([
 export class ApplicationService {
   private readonly logger = new Logger(ApplicationService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly workflowService: WorkflowService,
+  ) {}
 
   // ============================================================
   // Private helpers
@@ -527,10 +531,14 @@ export class ApplicationService {
   }
 
   /**
-   * Transitions an application to a new status, enforcing the allowed
-   * STATUS_TRANSITIONS map.
+   * Transitions an application to a new status.
    *
-   * Allowed paths:
+   * When a workflow template exists for the org/product, the workflow engine
+   * validates the transition (role, conditions, amount limits) and records history.
+   * Falls back to the hardcoded STATUS_TRANSITIONS map when no workflow template
+   * is configured for the org/product.
+   *
+   * Allowed paths (fallback):
    * LEAD -> APPLICATION -> DOCUMENT_COLLECTION -> BUREAU_CHECK ->
    * UNDERWRITING -> APPROVED/REJECTED -> SANCTIONED ->
    * DISBURSEMENT_PENDING -> DISBURSED
@@ -550,54 +558,108 @@ export class ApplicationService {
       throw new NotFoundException(`Loan application ${id} not found`);
     }
 
-    const currentStatus = application.status as ApplicationStatus;
-    const allowedTransitions = STATUS_TRANSITIONS[currentStatus] ?? [];
+    // Attempt to resolve a workflow template for this org/product.
+    const workflow = await this.workflowService.getWorkflow(orgId, application.productId);
 
-    if (!allowedTransitions.includes(dto.toStatus)) {
-      throw new UnprocessableEntityException(
-        `Invalid status transition from ${currentStatus} to ${dto.toStatus}. ` +
-          `Allowed transitions: [${allowedTransitions.join(', ')}]`,
+    if (workflow) {
+      // Workflow engine path: validate then execute (records history internally).
+      const currentStage = application.currentWorkflowStage ?? application.status;
+
+      const validation = await this.workflowService.validateTransition(
+        orgId,
+        id,
+        currentStage,
+        dto.toStatus,
+        userId ?? 'system',
       );
+
+      if (!validation.allowed) {
+        throw new UnprocessableEntityException(
+          validation.reason ??
+            `Invalid status transition from ${currentStage} to ${dto.toStatus}`,
+        );
+      }
+
+      await this.workflowService.executeTransition(
+        orgId,
+        id,
+        dto.toStatus,
+        userId ?? 'system',
+        dto.remarks,
+      );
+    } else {
+      // Fallback: hardcoded STATUS_TRANSITIONS map.
+      const currentStatus = application.status as ApplicationStatus;
+      const allowedTransitions = STATUS_TRANSITIONS[currentStatus] ?? [];
+
+      if (!allowedTransitions.includes(dto.toStatus)) {
+        throw new UnprocessableEntityException(
+          `Invalid status transition from ${currentStatus} to ${dto.toStatus}. ` +
+            `Allowed transitions: [${allowedTransitions.join(', ')}]`,
+        );
+      }
+
+      await this.prisma.loanApplication.update({
+        where: { id },
+        data: {
+          status: dto.toStatus,
+          ...(dto.toStatus === ApplicationStatus.REJECTED &&
+            dto.remarks && { rejectionReason: dto.remarks }),
+        },
+      });
+
+      await this.prisma.applicationStatusHistory.create({
+        data: {
+          applicationId: id,
+          fromStatus: currentStatus,
+          toStatus: dto.toStatus,
+          changedBy: userId ?? 'system',
+          remarks: dto.remarks,
+        },
+      });
     }
 
-    const updated = await this.prisma.loanApplication.update({
-      where: { id },
-      data: {
-        status: dto.toStatus,
-        ...(dto.toStatus === ApplicationStatus.REJECTED &&
-          dto.remarks && { rejectionReason: dto.remarks }),
-      },
-      include: {
-        customer: {
-          select: { id: true, fullName: true, phone: true },
-        },
-        product: {
-          select: { id: true, name: true, code: true, productType: true },
-        },
-        branch: {
-          select: { id: true, name: true, code: true },
-        },
-        assignedTo: {
-          select: { id: true, firstName: true, lastName: true, email: true },
-        },
-      },
-    });
-
-    await this.prisma.applicationStatusHistory.create({
-      data: {
-        applicationId: id,
-        fromStatus: currentStatus,
-        toStatus: dto.toStatus,
-        changedBy: userId || 'system',
-        remarks: dto.remarks,
-      },
-    });
-
     this.logger.log(
-      `Application ${application.applicationNumber} transitioned from ${currentStatus} to ${dto.toStatus}` +
+      `Application ${application.applicationNumber} transitioned to ${dto.toStatus}` +
         (dto.remarks ? ` — Remarks: ${dto.remarks}` : ''),
     );
 
-    return this.serialize(updated);
+    // Return the fresh, fully-serialized record.
+    return this.findOne(orgId, id);
+  }
+
+  /**
+   * Returns the list of workflow stages the given user can immediately
+   * transition to from the application's current stage.
+   * Falls back to the hardcoded STATUS_TRANSITIONS map when no workflow
+   * template exists for the org/product.
+   */
+  async getAvailableTransitions(
+    orgId: string,
+    applicationId: string,
+    userId: string,
+  ) {
+    const application = await this.prisma.loanApplication.findFirst({
+      where: { id: applicationId, organizationId: orgId, deletedAt: null },
+    });
+
+    if (!application) {
+      throw new NotFoundException(`Loan application ${applicationId} not found`);
+    }
+
+    const workflow = await this.workflowService.getWorkflow(orgId, application.productId);
+
+    if (workflow) {
+      return this.workflowService.getAvailableTransitions(orgId, applicationId, userId);
+    }
+
+    // Fallback: derive from static STATUS_TRANSITIONS map.
+    const currentStatus = application.status as ApplicationStatus;
+    const allowedStatuses = STATUS_TRANSITIONS[currentStatus] ?? [];
+    return allowedStatuses.map((toStatus) => ({
+      toStage: toStatus,
+      toStageName: toStatus,
+      requiresRemarks: toStatus === ApplicationStatus.REJECTED,
+    }));
   }
 }

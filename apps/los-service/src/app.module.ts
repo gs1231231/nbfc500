@@ -9,6 +9,8 @@ import { SanctionModule } from './sanction/sanction.module';
 import { DisbursementModule } from './disbursement/disbursement.module';
 import { CommissionModule } from './commission/commission.module';
 import { LeadModule } from './lead/lead.module';
+import { AaModule } from './account-aggregator/aa.module';
+import { DocaiModule } from './document-ai/docai.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { LeadModule } from './lead/lead.module';
     DisbursementModule,
     CommissionModule,
     LeadModule,
+    AaModule,
+    DocaiModule,
   ],
 })
 export class AppModule {}

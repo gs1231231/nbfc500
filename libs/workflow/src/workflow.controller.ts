@@ -16,6 +16,8 @@ import {
   CreateWorkflowDto,
   UpdateWorkflowDto,
   TransitionApplicationDto,
+  CloneWorkflowDto,
+  ValidateWorkflowDto,
 } from './workflow.dto';
 
 @Controller('workflows')
@@ -82,6 +84,45 @@ export class WorkflowController {
     @Param('id') id: string,
   ) {
     return this.workflowService.getStages(user.orgId, id);
+  }
+
+  /**
+   * POST /api/v1/workflows/:id/clone
+   * Duplicate a workflow template with a new name.
+   */
+  @Post(':id/clone')
+  @HttpCode(HttpStatus.CREATED)
+  async cloneWorkflow(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: CloneWorkflowDto,
+  ) {
+    return this.workflowService.cloneWorkflow(user.orgId, id, dto.newName);
+  }
+
+  /**
+   * POST /api/v1/workflows/validate
+   * Validate a workflow definition without persisting it.
+   */
+  @Post('validate')
+  @HttpCode(HttpStatus.OK)
+  validateWorkflow(@Body() dto: ValidateWorkflowDto) {
+    return this.workflowService.validateWorkflow(
+      dto.stages as unknown as WorkflowStage[],
+      dto.transitions as unknown as WorkflowTransition[],
+    );
+  }
+
+  /**
+   * GET /api/v1/workflows/:id/stats
+   * Return per-stage application counts for a workflow template.
+   */
+  @Get(':id/stats')
+  async getWorkflowStats(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.workflowService.getWorkflowStats(user.orgId, id);
   }
 }
 

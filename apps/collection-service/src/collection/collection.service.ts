@@ -134,7 +134,8 @@ export class CollectionService {
    *
    * For each overdue active loan in the org:
    *   1. Determine DPD from loan.dpd.
-   *   2. Match the applicable strategy based on DPD range.
+   *   2. Match the applicable strategy based on DPD range (DB strategies take priority;
+   *      falls back to hardcoded COLLECTION_STRATEGIES when none exist in DB for the org).
    *   3. Find if today's action (dayOffset === DPD) exists in strategy.
    *   4. If a matching action exists and no identical task was created today, create CollectionTask.
    *
@@ -158,6 +159,22 @@ export class CollectionService {
       },
     });
 
+    // Fetch per-tenant strategies from DB. Fall back to hardcoded list when absent.
+    const dbStrategies = await this.prisma.collectionStrategy.findMany({
+      where: { organizationId: orgId, isActive: true },
+    });
+
+    // Normalise DB strategies into the same CollectionStrategy shape used internally.
+    const effectiveStrategies: CollectionStrategy[] =
+      dbStrategies.length > 0
+        ? dbStrategies.map((s) => ({
+            name: s.name,
+            minDpd: s.dpdFrom,
+            maxDpd: s.dpdTo,
+            actions: (s.actions as unknown as StrategyAction[]),
+          }))
+        : COLLECTION_STRATEGIES;
+
     let createdTasksCount = 0;
 
     for (const loan of overdueLoans) {
@@ -165,7 +182,7 @@ export class CollectionService {
         const dpd = loan.dpd;
 
         // Match strategy based on DPD range
-        const strategy = COLLECTION_STRATEGIES.find(
+        const strategy = effectiveStrategies.find(
           (s) => dpd >= s.minDpd && dpd <= s.maxDpd,
         );
 

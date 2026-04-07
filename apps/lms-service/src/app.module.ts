@@ -8,6 +8,7 @@ import { AccrualModule } from './accrual/accrual.module';
 import { OtsModule } from './ots/ots.module';
 import { WriteoffModule } from './writeoff/writeoff.module';
 import { LoanModule } from './loan/loan.module';
+import { GlModule } from './gl/gl.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { LoanModule } from './loan/loan.module';
     OtsModule,
     WriteoffModule,
     LoanModule,
+    GlModule,
   ],
 })
 export class AppModule {}

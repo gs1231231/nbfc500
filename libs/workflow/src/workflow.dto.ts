@@ -173,3 +173,21 @@ export class TransitionApplicationDto {
   @IsString()
   remarks?: string;
 }
+
+export class CloneWorkflowDto {
+  @IsString()
+  newName!: string;
+}
+
+export class ValidateWorkflowDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => WorkflowStageDto)
+  stages!: WorkflowStageDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => WorkflowTransitionDto)
+  transitions!: WorkflowTransitionDto[];
+}

@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { mockCustomers, mockLoans, mockApplications } from "@/lib/mock-data";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Customer } from "@/lib/api";
+import DynamicFormRenderer from "@/components/dynamic-form/DynamicFormRenderer";
 
 const KYC_COLORS = {
   VERIFIED: "success",
@@ -36,6 +37,7 @@ export default function CustomerDetailPage() {
   const params = useParams();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
+  const [customFields, setCustomFields] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
     const found = mockCustomers.find((c) => c.id === params.id);
@@ -157,13 +159,14 @@ export default function CustomerDetailPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="loans">
-        <TabsList className="grid grid-cols-6 w-full">
+        <TabsList className="grid grid-cols-7 w-full">
           <TabsTrigger value="loans">Loans</TabsTrigger>
           <TabsTrigger value="applications">Applications</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="bureau">Bureau</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="custom-fields">Custom Fields</TabsTrigger>
         </TabsList>
 
         {/* Loans */}
@@ -351,6 +354,23 @@ export default function CustomerDetailPage() {
           <Card>
             <CardContent className="py-12 text-center text-gray-400">
               No collection tasks for this customer.
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Custom Fields */}
+        <TabsContent value="custom-fields">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Custom Fields</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DynamicFormRenderer
+                entityType="CUSTOMER"
+                initialValues={(customer as unknown as Record<string, unknown>)?.customFields as Record<string, unknown> | undefined}
+                onChange={setCustomFields}
+                readOnly={false}
+              />
             </CardContent>
           </Card>
         </TabsContent>

@@ -83,8 +83,24 @@ export class BreService {
 
     const bureauResponse = latestBureauRequest?.bureauResponse ?? null;
 
-    // Step 2: Build flat evaluation context
+    // Step 2: Build flat evaluation context (includes custom fields)
     const context = this.buildContext(application, bureauResponse);
+
+    // Merge customer custom fields under the "custom." prefix
+    const customerCustomFields = (application.customer as unknown as Record<string, unknown>).customFields;
+    if (customerCustomFields && typeof customerCustomFields === 'object') {
+      for (const [key, value] of Object.entries(customerCustomFields as Record<string, unknown>)) {
+        (context as Record<string, unknown>)[`custom.${key}`] = value as number | string | boolean;
+      }
+    }
+
+    // Merge application custom fields under the "custom." prefix (application fields override customer fields)
+    const applicationCustomFields = (application as unknown as Record<string, unknown>).customFields;
+    if (applicationCustomFields && typeof applicationCustomFields === 'object') {
+      for (const [key, value] of Object.entries(applicationCustomFields as Record<string, unknown>)) {
+        (context as Record<string, unknown>)[`custom.${key}`] = value as number | string | boolean;
+      }
+    }
 
     // Step 3 & 4: Fetch and evaluate rules
     const { ruleResults, decision, interestRateBps } = await this.runRules(
@@ -98,7 +114,7 @@ export class BreService {
       .filter((r) => r.result === 'FAIL')
       .map((r) => r.reason);
 
-    // Step 6: Persist BreDecision
+    // Step 6: Persist BreDecision (context already includes custom.* fields)
     await this.prisma.breDecision.create({
       data: {
         applicationId,
