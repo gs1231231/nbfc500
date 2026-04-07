@@ -294,13 +294,14 @@ export class PartnerService {
 
   /**
    * Fire a webhook event to all matching registered URLs for an org.
-   * Uses fire-and-forget (no await on HTTP calls in mock).
+   * Retries up to 3 times with exponential backoff (1s, 5s, 30s).
+   * After 3 failures, marks the webhook as failed (inactive).
    */
   async fireWebhook(
     orgId: string,
     event: string,
     payload: Record<string, unknown>,
-  ): Promise<{ fired: number; event: string }> {
+  ): Promise<{ fired: number; failed: number; event: string }> {
     const registrations = (webhookStore.get(orgId) ?? []).filter(
       (w) => w.isActive && w.events.includes(event),
     );
@@ -309,14 +310,58 @@ export class PartnerService {
       `Firing webhook event "${event}" to ${registrations.length} endpoint(s) for org ${orgId}`,
     );
 
-    // In production: use HttpService / fetch to POST to each URL
-    // Mock: log and count
+    const RETRY_DELAYS_MS = [1_000, 5_000, 30_000];
+    let fired = 0;
+    let failed = 0;
+
     for (const reg of registrations) {
-      this.logger.log(
-        `[MOCK] POST ${reg.url} — event: ${event}, payload: ${JSON.stringify(payload).slice(0, 120)}`,
-      );
+      let success = false;
+
+      for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+        try {
+          this.logger.log(
+            `[WEBHOOK] Attempt ${attempt + 1} — POST ${reg.url} — event: ${event}, ` +
+              `payload: ${JSON.stringify(payload).slice(0, 120)}`,
+          );
+
+          // In production: replace with real HTTP POST via HttpService / fetch
+          // Simulate success on first attempt for active webhooks
+          // (In real code: const res = await fetch(reg.url, { method: 'POST', body: JSON.stringify({ event, payload }) }); if (!res.ok) throw new Error(…); )
+          const simulatedFailure = false; // set true to test retry path
+          if (simulatedFailure) throw new Error('HTTP 502 Bad Gateway');
+
+          this.logger.log(`[WEBHOOK] Delivered to ${reg.url} on attempt ${attempt + 1}`);
+          success = true;
+          break;
+        } catch (err: any) {
+          this.logger.warn(
+            `[WEBHOOK] Attempt ${attempt + 1} failed for ${reg.url}: ${err.message}`,
+          );
+          if (attempt < RETRY_DELAYS_MS.length) {
+            const delay = RETRY_DELAYS_MS[attempt];
+            this.logger.log(`[WEBHOOK] Retrying in ${delay / 1000}s…`);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+          }
+        }
+      }
+
+      if (success) {
+        fired++;
+      } else {
+        failed++;
+        // Mark the webhook as inactive after exhausting retries
+        const orgWebhooks = webhookStore.get(orgId) ?? [];
+        const idx = orgWebhooks.findIndex((w) => w.id === reg.id);
+        if (idx !== -1) {
+          orgWebhooks[idx] = { ...orgWebhooks[idx], isActive: false };
+          webhookStore.set(orgId, orgWebhooks);
+        }
+        this.logger.error(
+          `[WEBHOOK] All retries exhausted for ${reg.url}. Marking as FAILED.`,
+        );
+      }
     }
 
-    return { fired: registrations.length, event };
+    return { fired, failed, event };
   }
 }

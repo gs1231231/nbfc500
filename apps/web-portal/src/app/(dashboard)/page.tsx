@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   FileText,
@@ -46,6 +47,22 @@ const STATUS_LABELS: Record<string, string> = {
   WITHDRAWN: "Withdrawn",
 };
 
+/** Map user role to default landing page. */
+function getDefaultRoute(role: string | null | undefined): string {
+  switch (role) {
+    case "SUPER_ADMIN":
+    case "BRANCH_MANAGER":
+    case "CREDIT_OFFICER":
+      return "/applications";
+    case "COLLECTION_AGENT":
+      return "/collections";
+    case "ACCOUNTS_OFFICER":
+      return "/loans";
+    default:
+      return "/applications";
+  }
+}
+
 interface MetricCardProps {
   title: string;
   value: string | number;
@@ -89,12 +106,25 @@ function MetricCard({ title, value, subtitle, icon: Icon, trend, color }: Metric
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [applications, setApplications] = useState<Application[]>([]);
   const dpdBuckets = mockCollectionDashboard.dpdBuckets;
 
+  // Role-based redirect on mount
   useEffect(() => {
+    try {
+      const userJson = localStorage.getItem("user");
+      if (userJson) {
+        const user = JSON.parse(userJson) as { role?: string };
+        const route = getDefaultRoute(user?.role);
+        router.replace(route);
+        return;
+      }
+    } catch {
+      // localStorage not available or invalid JSON — fall through to default dashboard
+    }
     setApplications(mockApplications.slice(0, 10));
-  }, []);
+  }, [router]);
 
   const todayApps = 12;
   const sanctionedToday = 3;

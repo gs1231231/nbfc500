@@ -13,7 +13,9 @@ export * from './integrations';
 // Phase 4 - Sentry Error Monitoring (Prompt 48)
 export * from './sentry.config';
 
-// Phase 4 - Security (Prompt 49)
-export * from './security/rate-limiter.guard';
-export * from './security/sanitize.pipe';
-export * from './security/helmet.config';
+// Phase 4 - Security (Prompt 49) + Encryption Service
+export * from './security/index';
+
+// Improvements 6-20
+export * from './swagger';
+export * from './i18n';

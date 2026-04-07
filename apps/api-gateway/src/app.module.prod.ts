@@ -91,6 +91,10 @@ import { CustomerServiceModule } from './customer-service/customer-service.modul
 import { MfiModule } from '../../los-service/src/mfi/mfi.module';
 // ── Gap 14: Welcome Kit + Annual Communications ───────────────────────────
 import { CommunicationsModule } from '../../lms-service/src/communications/communications.module';
+// ── Improvements 15-18: Audit Trail, Bulk Operations, Data Export ─────────
+import { AuditModule } from './audit/audit.module';
+import { BulkModule } from './bulk/bulk.module';
+import { ExportModule } from './export/export.module';
 
 @Module({
   imports: [
@@ -177,6 +181,11 @@ import { CommunicationsModule } from '../../lms-service/src/communications/commu
     CustomerServiceModule,
     MfiModule,
     CommunicationsModule,
+
+    // ── Improvements 15-18
+    AuditModule,
+    BulkModule,
+    ExportModule,
   ],
 })
 export class AppModuleProd {}

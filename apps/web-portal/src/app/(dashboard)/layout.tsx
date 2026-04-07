@@ -24,9 +24,17 @@ export default function DashboardLayout({
   const [isDemo, setIsDemo] = useState(false);
   const [demoBannerDismissed, setDemoBannerDismissed] = useState(false);
   const [demoUser, setDemoUser] = useState<{ firstName?: string; roles?: string[] } | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
+    // Auth guard: redirect to login if no token present
+    const token = localStorage.getItem("bankos_token");
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
     try {
       const userStr = localStorage.getItem("bankos_user");
       if (userStr) {
@@ -39,7 +47,21 @@ export default function DashboardLayout({
         }
       }
     } catch {}
+
+    setAuthChecked(true);
   }, []);
+
+  // Show a neutral loading screen while the auth check runs to prevent a white flash
+  if (!authChecked) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+          <p className="text-sm text-gray-500">Loading&hellip;</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
