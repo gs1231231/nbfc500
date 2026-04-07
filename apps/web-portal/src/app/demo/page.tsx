@@ -51,7 +51,8 @@ export default function DemoPage() {
     try {
       const res = await authApi.login(account.email, account.password);
       localStorage.setItem("bankos_token", res.accessToken);
-      localStorage.setItem("bankos_user", JSON.stringify(res.user));
+      localStorage.setItem("bankos_user", JSON.stringify({ ...res.user, email: account.email }));
+      localStorage.setItem("bankos_demo", "true");
       router.push("/applications");
     } catch {
       setError(
