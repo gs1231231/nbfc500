@@ -41,6 +41,11 @@ import { CommissionModule } from '../../los-service/src/commission/commission.mo
 import { LeadModule } from '../../los-service/src/lead/lead.module';
 import { AaModule } from '../../los-service/src/account-aggregator/aa.module';
 import { DocaiModule } from '../../los-service/src/document-ai/docai.module';
+// ── LOS Product-Specific Operations (Gap 1–4) ─────────────────────────────
+import { GoldLoanModule } from '../../los-service/src/gold-loan/gold-loan.module';
+import { VehicleModule } from '../../los-service/src/vehicle-finance/vehicle.module';
+import { PropertyModule } from '../../los-service/src/property-loan/property.module';
+import { MSMEModule } from '../../los-service/src/msme/msme.module';
 
 // ── LMS (Loan Management System) modules ──────────────────────────────────
 import { PaymentModule as LmsPaymentModule } from '../../lms-service/src/payment/payment.module';
@@ -74,6 +79,18 @@ import { ChatbotModule } from '../../notification-service/src/chatbot/chatbot.mo
 
 // ── Co-Lending ─────────────────────────────────────────────────────────────
 import { CoLendingModule } from '../../colending-service/src/colending/colending.module';
+
+// ── Gap 9: Accounting (Bank Recon, TDS, GST, EIR) ─────────────────────────
+import { AccountingModule } from '../../lms-service/src/accounting/accounting.module';
+// ── Gap 10: Enhanced Write-Off — already included via WriteoffModule
+// ── Gap 11: MIS Reports ────────────────────────────────────────────────────
+import { ReportsModule } from './reports/reports.module';
+// ── Gap 12: Customer Service + DPDPA ──────────────────────────────────────
+import { CustomerServiceModule } from './customer-service/customer-service.module';
+// ── Gap 13: MFI Operations ────────────────────────────────────────────────
+import { MfiModule } from '../../los-service/src/mfi/mfi.module';
+// ── Gap 14: Welcome Kit + Annual Communications ───────────────────────────
+import { CommunicationsModule } from '../../lms-service/src/communications/communications.module';
 
 @Module({
   imports: [
@@ -109,6 +126,11 @@ import { CoLendingModule } from '../../colending-service/src/colending/colending
     LeadModule,
     AaModule,
     DocaiModule,
+    // ── LOS Product-Specific (Gap 1–4)
+    GoldLoanModule,
+    VehicleModule,
+    PropertyModule,
+    MSMEModule,
 
     // ── LMS
     LmsPaymentModule,
@@ -148,6 +170,13 @@ import { CoLendingModule } from '../../colending-service/src/colending/colending
 
     // ── Workflow Engine
     WorkflowModule,
+
+    // ── Gap 9–14
+    AccountingModule,
+    ReportsModule,
+    CustomerServiceModule,
+    MfiModule,
+    CommunicationsModule,
   ],
 })
 export class AppModuleProd {}

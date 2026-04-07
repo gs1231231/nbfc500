@@ -317,6 +317,19 @@ model Organization {
   collectionCallLogs     CollectionCallLog[]
   fieldVisitLogs         FieldVisitLog[]
   loanRestructures       LoanRestructure[]
+  fundSources            FundSource[]
+  almBuckets             ALMBucket[]
+  insurancePolicies      InsurancePolicy[]
+  goldItems              GoldItem[]
+  goldRateHistory        GoldRateHistory[]
+  vehicleDetails         VehicleDetail[]
+  propertyDetails        PropertyDetail[]
+  msmeDetails            MSMEDetail[]
+  // GAP 12: Customer Service + DPDPA
+  complaints             Complaint[]
+  dataPrivacyRequests    DataPrivacyRequest[]
+  // GAP 13: MFI Group Lending
+  mfiGroups              MFIGroup[]
 
   @@index([code])
   @@map("organizations")
@@ -667,6 +680,7 @@ model Loan {
   callLogs            CollectionCallLog[]
   visitLogs           FieldVisitLog[]
   restructures        LoanRestructure[]
+  insurancePolicies   InsurancePolicy[]
 
   @@index([organizationId])
   @@index([organizationId, loanStatus])
@@ -1492,4 +1506,317 @@ model LoanRestructure {
   @@index([organizationId])
   @@index([loanId])
   @@map("loan_restructures")
+}
+
+// ============================================================
+// GAP 5: Treasury / Fund Management
+// ============================================================
+
+model FundSource {
+  id               String   @id @default(uuid())
+  organizationId   String
+  sourceName       String   // "HDFC Bank NCD", "SBI Term Loan"
+  sourceType       String   // TERM_LOAN, NCD, CP, ECB, SUBORDINATED_DEBT, EQUITY, SECURITIZATION
+  sanctionedPaisa  BigInt
+  drawnPaisa       BigInt   @default(0)
+  outstandingPaisa BigInt   @default(0)
+  costOfFundsBps   Int      // interest rate paid
+  drawdownDate     DateTime?
+  maturityDate     DateTime?
+  repaymentFrequency String? // MONTHLY, QUARTERLY, BULLET
+  covenants        Json?    // {minCrar, maxNpa, minNetWorth}
+  status           String   @default("ACTIVE") // ACTIVE, CLOSED, DEFAULTED
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@map("fund_sources")
+}
+
+model ALMBucket {
+  id               String   @id @default(uuid())
+  organizationId   String
+  reportDate       DateTime
+  bucketName       String   // "1-7 days", "8-14 days", "15-30 days", "1-2 months", etc.
+  inflowPaisa      BigInt   @default(0)
+  outflowPaisa     BigInt   @default(0)
+  gapPaisa         BigInt   @default(0)
+  cumulativeGapPaisa BigInt @default(0)
+  createdAt        DateTime @default(now())
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, reportDate])
+  @@map("alm_buckets")
+}
+
+// ============================================================
+// GAP 8: Insurance Management
+// ============================================================
+
+model InsurancePolicy {
+  id               String   @id @default(uuid())
+  organizationId   String
+  loanId           String
+  customerId       String
+  policyType       String   // CREDIT_LIFE, PROPERTY, VEHICLE, HEALTH, KEYMAN
+  providerName     String
+  policyNumber     String?
+  premiumPaisa     Int
+  sumInsuredPaisa  Int
+  startDate        DateTime
+  endDate          DateTime
+  status           String   @default("ACTIVE") // ACTIVE, EXPIRED, CLAIMED, CANCELLED
+  renewalDueDate   DateTime?
+  nomineeId        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loan             Loan         @relation(fields: [loanId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([loanId])
+  @@map("insurance_policies")
+}
+
+// ============================================================
+// GAP 12: Customer Service + DPDPA + Complaint Management
+// ============================================================
+
+model Complaint {
+  id              String   @id @default(uuid())
+  organizationId  String
+  customerId      String
+  loanId          String?
+  complaintNumber String   @unique
+  category        String   // BILLING, SERVICE, HARASSMENT, DATA_PRIVACY, FRAUD, OTHER
+  description     String
+  status          String   @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, ESCALATED, CLOSED
+  priority        String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  assignedToId    String?
+  resolution      String?
+  resolvedAt      DateTime?
+  slaDeadline     DateTime
+  escalationLevel Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([customerId])
+  @@map("complaints")
+}
+
+model DataPrivacyRequest {
+  id              String   @id @default(uuid())
+  organizationId  String
+  customerId      String
+  requestType     String   // ACCESS, CORRECTION, DELETION, PORTABILITY, CONSENT_WITHDRAWAL
+  status          String   @default("RECEIVED") // RECEIVED, PROCESSING, COMPLETED, REJECTED
+  requestDetails  Json?
+  responseDetails Json?
+  slaDeadline     DateTime
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@map("data_privacy_requests")
+}
+
+// ============================================================
+// GAP 13: MFI Group Lending Operations
+// ============================================================
+
+model MFIGroup {
+  id             String   @id @default(uuid())
+  organizationId String
+  groupName      String
+  centerName     String
+  branchId       String
+  groupLeaderId  String?  // customer ID of group leader
+  meetingDay     String?  // MONDAY, TUESDAY, etc.
+  meetingTime    String?
+  formationDate  DateTime
+  memberCount    Int      @default(0)
+  status         String   @default("ACTIVE") // ACTIVE, DISSOLVED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  members        MFIGroupMember[]
+
+  @@index([organizationId])
+  @@map("mfi_groups")
+}
+
+model MFIGroupMember {
+  id         String    @id @default(uuid())
+  groupId    String
+  customerId String
+  role       String    @default("MEMBER") // LEADER, SECRETARY, MEMBER
+  joinDate   DateTime  @default(now())
+  exitDate   DateTime?
+  status     String    @default("ACTIVE")
+
+  group      MFIGroup  @relation(fields: [groupId], references: [id], onDelete: Restrict)
+
+  @@index([groupId])
+  @@index([customerId])
+  @@map("mfi_group_members")
+}
+
+// ============================================================
+// GAP 1: Gold Loan Operations
+// ============================================================
+
+model GoldItem {
+  id                 String   @id @default(uuid())
+  organizationId     String
+  applicationId      String?
+  loanId             String?
+  itemNumber         Int
+  itemType           String   // CHAIN, NECKLACE, BANGLE, RING, COIN, BAR, EARRING, OTHER
+  description        String?
+  grossWeightGrams   Decimal  @db.Decimal(10,3)
+  netWeightGrams     Decimal  @db.Decimal(10,3)
+  purityKarat        Decimal  @db.Decimal(4,1)
+  purityPercentage   Decimal  @db.Decimal(6,3)
+  hallmarkNumber     String?
+  stoneWeightGrams   Decimal  @default(0) @db.Decimal(10,3)
+  appraisedValuePaisa Int
+  sealNumber         String?
+  packetNumber       String?
+  status             String   @default("IN_CUSTODY") // IN_CUSTODY, RELEASED, AUCTIONED
+  custodyBranchId    String?
+  custodyInDate      DateTime?
+  custodyOutDate     DateTime?
+  releaseApprovedBy  String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@index([loanId])
+  @@map("gold_items")
+}
+
+model GoldRateHistory {
+  id             String   @id @default(uuid())
+  organizationId String
+  rateDate       DateTime
+  ratePer10GramsPaisa Int  // gold rate per 10 grams in paisa
+  purity         String   @default("22K")
+  source         String?
+  createdAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  @@index([organizationId, rateDate])
+  @@map("gold_rate_history")
+}
+
+// ============================================================
+// GAP 2: Vehicle Finance Operations
+// ============================================================
+
+model VehicleDetail {
+  id                 String   @id @default(uuid())
+  organizationId     String
+  applicationId      String?
+  loanId             String?
+  vehicleType        String   // TWO_WHEELER, CAR, COMMERCIAL, TRACTOR, CONSTRUCTION
+  isNewVehicle       Boolean  @default(true)
+  make               String
+  model              String
+  variant            String?
+  yearOfManufacture  Int
+  registrationNumber String?
+  engineNumber       String?
+  chassisNumber      String?
+  color              String?
+  exShowroomPaisa    Int?
+  onRoadPricePaisa   Int?
+  insuranceValuePaisa Int?
+  dealerName         String?
+  dealerCode         String?
+  invoiceNumber      String?
+  invoiceDate        DateTime?
+  hypothecationStatus String @default("PENDING") // PENDING, FILED, CONFIRMED, RELEASED
+  hypothecationDate  DateTime?
+  rcVerified         Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@index([loanId])
+  @@map("vehicle_details")
+}
+
+// ============================================================
+// GAP 3: Home Loan / LAP Construction Stage
+// ============================================================
+
+model PropertyDetail {
+  id                 String   @id @default(uuid())
+  organizationId     String
+  applicationId      String?
+  loanId             String?
+  propertyType       String   // RESIDENTIAL_FLAT, HOUSE, PLOT, COMMERCIAL, INDUSTRIAL
+  address            String
+  city               String
+  state              String
+  pincode            String
+  areaSquareFeet     Decimal? @db.Decimal(10,2)
+  marketValuePaisa   Int?
+  forcedSaleValuePaisa Int?
+  registrationNumber String?
+  titleHolder        String?
+  titleStatus        String?  // CLEAR, DEFECTIVE, UNDER_DISPUTE
+  encumbranceFree    Boolean  @default(false)
+  cersaiId           String?
+  cersaiStatus       String?  // PENDING, FILED, CONFIRMED
+  constructionStage  String?  // NOT_STARTED, FOUNDATION, STRUCTURE, FINISHING, COMPLETED
+  constructionProgress Int?   // 0-100 percentage
+  builderName        String?
+  projectName        String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@index([loanId])
+  @@map("property_details")
+}
+
+// ============================================================
+// GAP 4: MSME Working Capital
+// ============================================================
+
+model MSMEDetail {
+  id                 String   @id @default(uuid())
+  organizationId     String
+  applicationId      String?
+  loanId             String?
+  gstin              String?
+  udyamNumber        String?
+  msmeCategory       String?  // MICRO, SMALL, MEDIUM
+  businessType       String?  // MANUFACTURING, SERVICES, TRADING
+  businessVintageMonths Int?
+  annualTurnoverPaisa BigInt?
+  gstTurnoverPaisa   BigInt?
+  bankingLimitPaisa  Int?
+  drawingPowerPaisa  Int?
+  stockStatementDate DateTime?
+  stockValuePaisa    Int?
+  debtorValuePaisa   Int?
+  creditorValuePaisa Int?
+  currentRatioPct    Decimal? @db.Decimal(5,2)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@map("msme_details")
 }

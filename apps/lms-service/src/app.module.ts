@@ -13,6 +13,13 @@ import { NachModule } from './nach/nach.module';
 import { LoanViewerModule } from './loan-viewer/loan-viewer.module';
 import { RestructureModule } from './restructure/restructure.module';
 import { SoaModule } from './soa/soa.module';
+import { TreasuryModule } from './treasury/treasury.module';
+import { RateModule } from './rate-management/rate.module';
+import { InsuranceModule } from './insurance/insurance.module';
+// GAP 9: Bank Reconciliation, TDS, GST, EIR
+import { AccountingModule } from './accounting/accounting.module';
+// GAP 14: Welcome Kit, Annual Statements, Rate Change Notices
+import { CommunicationsModule } from './communications/communications.module';
 
 @Module({
   imports: [
@@ -32,6 +39,11 @@ import { SoaModule } from './soa/soa.module';
     LoanViewerModule,
     RestructureModule,
     SoaModule,
+    TreasuryModule,
+    RateModule,
+    InsuranceModule,
+    AccountingModule,
+    CommunicationsModule,
   ],
 })
 export class AppModule {}

@@ -13,6 +13,13 @@ import { AaModule } from './account-aggregator/aa.module';
 import { DocaiModule } from './document-ai/docai.module';
 import { VerificationModule } from './verification/verification.module';
 import { CamModule } from './cam/cam.module';
+import { GoldLoanModule } from './gold-loan/gold-loan.module';
+import { VehicleModule } from './vehicle-finance/vehicle.module';
+import { PropertyModule } from './property-loan/property.module';
+import { MSMEModule } from './msme/msme.module';
+import { BtModule } from './balance-transfer/bt.module';
+// GAP 13: MFI Specific Operations (JLG/SHG groups, CGT, GRT, bulk disburse)
+import { MfiModule } from './mfi/mfi.module';
 
 @Module({
   imports: [
@@ -32,6 +39,15 @@ import { CamModule } from './cam/cam.module';
     DocaiModule,
     VerificationModule,
     CamModule,
+    // Product-specific operations (Gap 1–4)
+    GoldLoanModule,
+    VehicleModule,
+    PropertyModule,
+    MSMEModule,
+    // Gap 7: Balance Transfer + Top-Up
+    BtModule,
+    // Gap 13: MFI Operations
+    MfiModule,
   ],
 })
 export class AppModule {}

@@ -13,6 +13,9 @@ import {
   InitiateWriteoffDto,
   ApproveWriteoffDto,
   RecordWriteoffRecoveryDto,
+  TechnicalWriteOffDto,
+  BoardApprovalDto,
+  PostWriteOffRecoveryDto,
 } from './dto/writeoff.dto';
 
 @Controller('api/v1/writeoffs')
@@ -68,5 +71,69 @@ export class WriteoffController {
     @Body() dto: RecordWriteoffRecoveryDto,
   ) {
     return this.writeoffService.recordRecovery(orgId, writeoffId, dto);
+  }
+
+  // ── GAP 10 endpoints ──────────────────────────────────────────────────────
+
+  /**
+   * POST /api/v1/writeoffs/loans/:loanId/technical
+   * Technical write-off: removes from books, collection continues.
+   */
+  @Post('loans/:loanId/technical')
+  technicalWriteOff(
+    @Headers('x-org-id') orgId: string,
+    @Param('loanId') loanId: string,
+    @Body() dto: TechnicalWriteOffDto,
+  ) {
+    return this.writeoffService.technicalWriteOff(orgId, loanId, dto);
+  }
+
+  /**
+   * POST /api/v1/writeoffs/:id/board-approval
+   * Record board resolution number and date.
+   */
+  @Post(':id/board-approval')
+  boardApproval(
+    @Headers('x-org-id') orgId: string,
+    @Param('id') writeoffId: string,
+    @Body() dto: BoardApprovalDto,
+  ) {
+    return this.writeoffService.boardApproval(orgId, writeoffId, dto);
+  }
+
+  /**
+   * POST /api/v1/writeoffs/loans/:loanId/post-writeoff-recovery
+   * Record recovery after write-off.
+   */
+  @Post('loans/:loanId/post-writeoff-recovery')
+  postWriteOffRecovery(
+    @Headers('x-org-id') orgId: string,
+    @Param('loanId') loanId: string,
+    @Body() dto: PostWriteOffRecoveryDto,
+  ) {
+    return this.writeoffService.postWriteOffRecovery(orgId, loanId, dto);
+  }
+
+  /**
+   * GET /api/v1/writeoffs/report?fy=2025-26
+   * Write-off and recovery summary report.
+   */
+  @Get('report')
+  getWriteOffReport(
+    @Headers('x-org-id') orgId: string,
+    @Query('fy') fy?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.writeoffService.getWriteOffReport(orgId, fy, from, to);
+  }
+
+  /**
+   * POST /api/v1/writeoffs/auto-identify
+   * Auto-identify loans meeting write-off criteria (NPA > 4 years, Loss Assets).
+   */
+  @Post('auto-identify')
+  suoMotoWriteOff(@Headers('x-org-id') orgId: string) {
+    return this.writeoffService.suoMotoWriteOff(orgId);
   }
 }
