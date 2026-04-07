@@ -21,6 +21,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 // ── Shared infrastructure libs ─────────────────────────────────────────────
 import { DatabaseModule } from '@bankos/database';
 import { AuthModule } from '@bankos/auth';
+import { CustomFieldsModule } from '@bankos/custom-fields';
+import { WorkflowModule } from '@bankos/workflow';
 
 // ── API Gateway modules ────────────────────────────────────────────────────
 import { HealthModule } from './health/health.module';
@@ -120,6 +122,12 @@ import { CoLendingModule } from '../../colending-service/src/colending/colending
 
     // ── Co-Lending
     CoLendingModule,
+
+    // ── Custom Fields Engine
+    CustomFieldsModule,
+
+    // ── Workflow Engine
+    WorkflowModule,
   ],
 })
 export class AppModuleProd {}

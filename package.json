@@ -39,6 +39,7 @@
     "prisma:migrate:prod": "prisma migrate deploy --schema=libs/database/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=libs/database/prisma/schema.prisma",
     "prisma:seed": "ts-node libs/database/prisma/seed.ts",
+    "prisma:seed-org2": "ts-node libs/database/prisma/seed-org2.ts",
     "prepare": "husky install",
     "typecheck": "tsc --noEmit"
   },
@@ -127,7 +128,11 @@
       "@bankos/auth/(.*)": "<rootDir>/libs/auth/src/$1",
       "@bankos/auth": "<rootDir>/libs/auth/src",
       "@bankos/events/(.*)": "<rootDir>/libs/events/src/$1",
-      "@bankos/events": "<rootDir>/libs/events/src"
+      "@bankos/events": "<rootDir>/libs/events/src",
+      "@bankos/custom-fields/(.*)": "<rootDir>/libs/custom-fields/src/$1",
+      "@bankos/custom-fields": "<rootDir>/libs/custom-fields/src",
+      "@bankos/workflow/(.*)": "<rootDir>/libs/workflow/src/$1",
+      "@bankos/workflow": "<rootDir>/libs/workflow/src"
     }
   },
   "engines": {

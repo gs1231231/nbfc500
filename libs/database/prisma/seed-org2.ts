@@ -5,8 +5,8 @@ import Decimal from 'decimal.js';
 
 const prisma = new PrismaClient();
 
-// Deterministic seed
-faker.seed(12345);
+// Deterministic seed for ORG2
+faker.seed(67890);
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -108,29 +108,29 @@ function pad(n: number, width: number): string {
 // ─── Indian reference data ────────────────────────────────────────────────
 
 const INDIAN_STATES = [
-  'Rajasthan',
   'Maharashtra',
-  'Delhi',
   'Karnataka',
-  'Tamil Nadu',
   'Gujarat',
-  'Uttar Pradesh',
   'Madhya Pradesh',
-  'West Bengal',
   'Telangana',
+  'Tamil Nadu',
+  'Rajasthan',
+  'Uttar Pradesh',
+  'West Bengal',
+  'Delhi',
 ];
 
 const CITIES_BY_STATE: Record<string, string[]> = {
-  Rajasthan: ['Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Ajmer'],
-  Maharashtra: ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Aurangabad'],
-  Delhi: ['New Delhi', 'Dwarka', 'Rohini', 'Saket', 'Lajpat Nagar'],
+  Maharashtra: ['Pune', 'Mumbai', 'Nashik', 'Nagpur', 'Aurangabad'],
   Karnataka: ['Bengaluru', 'Mysuru', 'Hubli', 'Mangaluru', 'Belagavi'],
-  'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Salem', 'Tiruchirappalli'],
   Gujarat: ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Gandhinagar'],
-  'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Agra', 'Varanasi', 'Meerut'],
   'Madhya Pradesh': ['Bhopal', 'Indore', 'Gwalior', 'Jabalpur', 'Ujjain'],
-  'West Bengal': ['Kolkata', 'Howrah', 'Durgapur', 'Asansol', 'Siliguri'],
   Telangana: ['Hyderabad', 'Warangal', 'Nizamabad', 'Karimnagar', 'Khammam'],
+  'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Salem', 'Tiruchirappalli'],
+  Rajasthan: ['Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Ajmer'],
+  'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Agra', 'Varanasi', 'Meerut'],
+  'West Bengal': ['Kolkata', 'Howrah', 'Durgapur', 'Asansol', 'Siliguri'],
+  Delhi: ['New Delhi', 'Dwarka', 'Rohini', 'Saket', 'Lajpat Nagar'],
 };
 
 function randomIndianAddress(): {
@@ -164,31 +164,30 @@ function randomIndianAddress(): {
 }
 
 const INDIAN_FIRST_NAMES_MALE = [
-  'Rajesh', 'Amit', 'Suresh', 'Vikram', 'Anil', 'Deepak', 'Ramesh', 'Sanjay',
-  'Mahesh', 'Dinesh', 'Ravi', 'Ajay', 'Vijay', 'Pradeep', 'Santosh', 'Rakesh',
-  'Nitin', 'Rohit', 'Gaurav', 'Mohit', 'Arjun', 'Kiran', 'Harish', 'Naresh',
-  'Prakash', 'Anand', 'Sunil', 'Manoj', 'Pankaj', 'Vikas',
+  'Suresh', 'Ramesh', 'Ganesh', 'Mahesh', 'Naresh', 'Dinesh', 'Rajesh', 'Mukesh',
+  'Umesh', 'Yogesh', 'Bhavesh', 'Hitesh', 'Nilesh', 'Kamlesh', 'Devesh',
+  'Rupesh', 'Santosh', 'Prakash', 'Rakesh', 'Vivek',
 ];
 
 const INDIAN_FIRST_NAMES_FEMALE = [
-  'Priya', 'Sunita', 'Anita', 'Kavita', 'Pooja', 'Neha', 'Rekha', 'Suman',
-  'Geeta', 'Meena', 'Asha', 'Usha', 'Seema', 'Nisha', 'Ritu', 'Manju',
-  'Shanti', 'Lalita', 'Vandana', 'Archana',
+  'Sunita', 'Savita', 'Kavita', 'Lalita', 'Mamta', 'Sangeeta', 'Priya',
+  'Rekha', 'Meena', 'Geeta', 'Asha', 'Usha', 'Seema', 'Nisha', 'Ritu',
+  'Manju', 'Shanti', 'Vandana', 'Archana', 'Pooja',
 ];
 
-const INDIAN_LAST_NAMES = [
-  'Kumar', 'Sharma', 'Singh', 'Verma', 'Gupta', 'Patel', 'Shah', 'Mehta',
-  'Joshi', 'Agarwal', 'Mishra', 'Yadav', 'Tiwari', 'Pandey', 'Chauhan',
-  'Soni', 'Nair', 'Pillai', 'Reddy', 'Rao',
+const INDIAN_LAST_NAMES_MAHARASHTRA = [
+  'Patil', 'Jadhav', 'Shinde', 'Deshmukh', 'More', 'Pawar', 'Kadam',
+  'Bhosale', 'Salve', 'Gaikwad', 'Kulkarni', 'Deshpande', 'Joshi',
+  'Phadke', 'Gokhale', 'Sathe', 'Mane', 'Waghmare', 'Gavhane', 'Dhule',
 ];
 
 const EMPLOYER_NAMES = [
-  'Infosys Ltd', 'TCS', 'Wipro Technologies', 'HCL Technologies',
-  'State Bank of India', 'HDFC Bank', 'ICICI Bank', 'Axis Bank',
-  'Reliance Industries', 'Tata Motors', 'Mahindra & Mahindra',
-  'L&T Construction', 'Bajaj Auto', 'Hero MotoCorp',
-  'Dr. Reddy\'s Laboratories', 'Sun Pharmaceutical', 'ITC Ltd',
-  'Hindustan Unilever', 'ONGC', 'BHEL',
+  'Tata Consultancy Services', 'Infosys', 'Wipro', 'Tech Mahindra',
+  'Bajaj Finserv', 'HDFC Bank', 'Bank of Maharashtra', 'Pune Municipal Corporation',
+  'Maharashtra State Electricity Board', 'Kirloskar Electric',
+  'Thermax Ltd', 'Cummins India', 'Force Motors', 'Bharat Forge',
+  'Finolex Industries', 'Godrej & Boyce', 'Volkswagen India',
+  'Sandvik Asia', 'Atlas Copco', 'Snap-on Tools',
 ];
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -196,21 +195,21 @@ const EMPLOYER_NAMES = [
 // ────────────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('Starting seed...');
+  console.log('Starting ORG2 seed (QuickCash NBFC)...');
 
   // ── 1. Organization ────────────────────────────────────────────────────
   console.log('Creating organization...');
   const org = await prisma.organization.create({
     data: {
-      name: 'Growth Finance Ltd',
-      code: 'GROWTH',
-      licenseType: 'NBFC_ICC',
-      rbiRegistrationNumber: 'N-01.00001',
-      cinNumber: 'U65100RJ2020PLC012345',
-      address: '12, Tonk Road, Malviya Nagar',
-      city: 'Jaipur',
-      state: 'Rajasthan',
-      pincode: '302017',
+      name: 'QuickCash NBFC',
+      code: 'QCASH',
+      licenseType: 'NBFC_MFI',
+      rbiRegistrationNumber: 'N-02.00002',
+      cinNumber: 'U65100MH2021PLC098765',
+      address: '7th Floor, ICC Trade Tower, Senapati Bapat Road',
+      city: 'Pune',
+      state: 'Maharashtra',
+      pincode: '411016',
       isActive: true,
       settings: {},
     },
@@ -222,51 +221,35 @@ async function main() {
   const branchHO = await prisma.branch.create({
     data: {
       organizationId: org.id,
-      name: 'Head Office Jaipur',
-      code: 'HO-JPR',
+      name: 'Head Office Pune',
+      code: 'HO-PUNE',
       branchType: 'HEAD_OFFICE',
-      address: '12, Tonk Road, Malviya Nagar',
-      city: 'Jaipur',
-      state: 'Rajasthan',
-      pincode: '302017',
-      latitude: 26.8467,
-      longitude: 80.9462,
-      isActive: true,
-    },
-  });
-
-  const branchMUM = await prisma.branch.create({
-    data: {
-      organizationId: org.id,
-      name: 'Branch Mumbai',
-      code: 'BR-MUM',
-      branchType: 'BRANCH',
-      address: '45, Andheri Kurla Road, Andheri East',
-      city: 'Mumbai',
+      address: '7th Floor, ICC Trade Tower, Senapati Bapat Road',
+      city: 'Pune',
       state: 'Maharashtra',
-      pincode: '400069',
-      latitude: 19.076,
-      longitude: 72.8777,
+      pincode: '411016',
+      latitude: 18.5204,
+      longitude: 73.8567,
       isActive: true,
     },
   });
 
-  const branchDEL = await prisma.branch.create({
+  const branchNSK = await prisma.branch.create({
     data: {
       organizationId: org.id,
-      name: 'Branch Delhi',
-      code: 'BR-DEL',
+      name: 'Branch Nashik',
+      code: 'BR-NSK',
       branchType: 'BRANCH',
-      address: '23, Connaught Place',
-      city: 'New Delhi',
-      state: 'Delhi',
-      pincode: '110001',
-      latitude: 28.6139,
-      longitude: 77.209,
+      address: '12, College Road, Nashik',
+      city: 'Nashik',
+      state: 'Maharashtra',
+      pincode: '422005',
+      latitude: 19.9975,
+      longitude: 73.7898,
       isActive: true,
     },
   });
-  console.log('  3 branches created');
+  console.log('  2 branches created');
 
   // ── 3. Users ────────────────────────────────────────────────────────────
   console.log('Creating users...');
@@ -274,93 +257,48 @@ async function main() {
 
   const userData = [
     {
-      firstName: 'Rajesh',
-      lastName: 'Kumar',
-      email: 'rajesh.kumar@growthfinance.in',
-      phone: '9876543210',
-      employeeCode: 'EMP001',
-      designation: 'Super Administrator',
+      firstName: 'Suresh',
+      lastName: 'Patil',
+      email: 'suresh.patil@quickcash.in',
+      phone: '9823456780',
+      employeeCode: 'QC001',
+      designation: 'Administrator',
       branchId: branchHO.id,
     },
     {
-      firstName: 'Amit',
-      lastName: 'Sharma',
-      email: 'amit.sharma@growthfinance.in',
-      phone: '9876543211',
-      employeeCode: 'EMP002',
+      firstName: 'Mahesh',
+      lastName: 'Jadhav',
+      email: 'mahesh.jadhav@quickcash.in',
+      phone: '9823456781',
+      employeeCode: 'QC002',
       designation: 'Branch Manager',
-      branchId: branchMUM.id,
+      branchId: branchNSK.id,
+    },
+    {
+      firstName: 'Ganesh',
+      lastName: 'Shinde',
+      email: 'ganesh.shinde@quickcash.in',
+      phone: '9823456782',
+      employeeCode: 'QC003',
+      designation: 'Credit Officer',
+      branchId: branchHO.id,
     },
     {
       firstName: 'Sunita',
-      lastName: 'Verma',
-      email: 'sunita.verma@growthfinance.in',
-      phone: '9876543212',
-      employeeCode: 'EMP003',
-      designation: 'Branch Manager',
-      branchId: branchDEL.id,
-    },
-    {
-      firstName: 'Vikram',
-      lastName: 'Singh',
-      email: 'vikram.singh@growthfinance.in',
-      phone: '9876543213',
-      employeeCode: 'EMP004',
+      lastName: 'Deshmukh',
+      email: 'sunita.deshmukh@quickcash.in',
+      phone: '9823456783',
+      employeeCode: 'QC004',
       designation: 'Credit Officer',
-      branchId: branchMUM.id,
-    },
-    {
-      firstName: 'Priya',
-      lastName: 'Gupta',
-      email: 'priya.gupta@growthfinance.in',
-      phone: '9876543214',
-      employeeCode: 'EMP005',
-      designation: 'Credit Officer',
-      branchId: branchDEL.id,
-    },
-    {
-      firstName: 'Deepak',
-      lastName: 'Mehta',
-      email: 'deepak.mehta@growthfinance.in',
-      phone: '9876543215',
-      employeeCode: 'EMP006',
-      designation: 'Senior Credit Officer',
-      branchId: branchHO.id,
-    },
-    {
-      firstName: 'Anita',
-      lastName: 'Patel',
-      email: 'anita.patel@growthfinance.in',
-      phone: '9876543216',
-      employeeCode: 'EMP007',
-      designation: 'Operations Officer',
-      branchId: branchMUM.id,
-    },
-    {
-      firstName: 'Ramesh',
-      lastName: 'Joshi',
-      email: 'ramesh.joshi@growthfinance.in',
-      phone: '9876543217',
-      employeeCode: 'EMP008',
-      designation: 'Operations Officer',
-      branchId: branchDEL.id,
+      branchId: branchNSK.id,
     },
     {
       firstName: 'Kavita',
-      lastName: 'Yadav',
-      email: 'kavita.yadav@growthfinance.in',
-      phone: '9876543218',
-      employeeCode: 'EMP009',
+      lastName: 'More',
+      email: 'kavita.more@quickcash.in',
+      phone: '9823456784',
+      employeeCode: 'QC005',
       designation: 'Collection Agent',
-      branchId: branchMUM.id,
-    },
-    {
-      firstName: 'Suresh',
-      lastName: 'Agarwal',
-      email: 'suresh.agarwal@growthfinance.in',
-      phone: '9876543219',
-      employeeCode: 'EMP010',
-      designation: 'Compliance Officer',
       branchId: branchHO.id,
     },
   ];
@@ -385,42 +323,40 @@ async function main() {
   }
   console.log(`  ${users.length} users created`);
 
-  const [superAdmin, branchMgr1, branchMgr2, creditOff1, creditOff2, creditOff3, opsOff1, opsOff2, collAgent, complianceOff] = users;
+  const [adminUser, branchMgr, creditOff1, creditOff2, collAgent] = users;
 
-  // Update branch managers
-  await prisma.branch.update({ where: { id: branchMUM.id }, data: { managerId: branchMgr1.id } });
-  await prisma.branch.update({ where: { id: branchDEL.id }, data: { managerId: branchMgr2.id } });
+  // Update branch manager
+  await prisma.branch.update({ where: { id: branchNSK.id }, data: { managerId: branchMgr.id } });
 
   // ── 4. Roles ────────────────────────────────────────────────────────────
   console.log('Creating roles...');
 
   const roleDefinitions = [
     {
-      name: 'Super Admin',
-      code: 'SUPER_ADMIN',
+      name: 'Admin',
+      code: 'QCASH_ADMIN',
       permissions: [
-        'org:read', 'org:write', 'org:delete',
-        'branch:read', 'branch:write', 'branch:delete',
+        'org:read', 'org:write',
+        'branch:read', 'branch:write',
         'user:read', 'user:write', 'user:delete',
-        'role:read', 'role:write', 'role:delete',
+        'role:read', 'role:write',
         'customer:read', 'customer:write', 'customer:delete',
-        'loan_product:read', 'loan_product:write', 'loan_product:delete',
+        'loan_product:read', 'loan_product:write',
         'loan_application:read', 'loan_application:write', 'loan_application:delete',
-        'loan:read', 'loan:write', 'loan:delete',
+        'loan:read', 'loan:write',
         'payment:read', 'payment:write',
         'bureau:read', 'bureau:write',
-        'bre:read', 'bre:write', 'bre:delete',
+        'bre:read', 'bre:write',
         'collection:read', 'collection:write',
-        'dsa:read', 'dsa:write', 'dsa:delete',
+        'dsa:read', 'dsa:write',
         'gl:read', 'gl:write',
-        'report:read', 'report:write',
-        'compliance:read', 'compliance:write',
+        'report:read',
         'audit:read',
       ],
     },
     {
       name: 'Branch Manager',
-      code: 'BRANCH_MANAGER',
+      code: 'QCASH_BRANCH_MANAGER',
       permissions: [
         'branch:read',
         'user:read',
@@ -439,7 +375,7 @@ async function main() {
     },
     {
       name: 'Credit Officer',
-      code: 'CREDIT_OFFICER',
+      code: 'QCASH_CREDIT_OFFICER',
       permissions: [
         'customer:read', 'customer:write',
         'loan_product:read',
@@ -451,34 +387,8 @@ async function main() {
       ],
     },
     {
-      name: 'Credit Head',
-      code: 'CREDIT_HEAD',
-      permissions: [
-        'customer:read', 'customer:write',
-        'loan_product:read', 'loan_product:write',
-        'loan_application:read', 'loan_application:write', 'loan_application:delete',
-        'loan:read', 'loan:write',
-        'bureau:read', 'bureau:write',
-        'bre:read', 'bre:write',
-        'dsa:read', 'dsa:write',
-        'report:read',
-      ],
-    },
-    {
-      name: 'Operations Officer',
-      code: 'OPS_OFFICER',
-      permissions: [
-        'customer:read', 'customer:write',
-        'loan_application:read', 'loan_application:write',
-        'loan:read', 'loan:write',
-        'payment:read', 'payment:write',
-        'gl:read', 'gl:write',
-        'dsa:read',
-      ],
-    },
-    {
       name: 'Collection Agent',
-      code: 'COLLECTION_AGENT',
+      code: 'QCASH_COLLECTION_AGENT',
       permissions: [
         'customer:read',
         'loan:read',
@@ -487,26 +397,12 @@ async function main() {
       ],
     },
     {
-      name: 'Compliance Officer',
-      code: 'COMPLIANCE_OFFICER',
+      name: 'Viewer',
+      code: 'QCASH_VIEWER',
       permissions: [
         'customer:read',
         'loan_application:read',
         'loan:read',
-        'bureau:read',
-        'bre:read',
-        'audit:read',
-        'compliance:read', 'compliance:write',
-        'report:read',
-      ],
-    },
-    {
-      name: 'Accounts Officer',
-      code: 'ACCOUNTS_OFFICER',
-      permissions: [
-        'loan:read',
-        'payment:read', 'payment:write',
-        'gl:read', 'gl:write',
         'report:read',
       ],
     },
@@ -530,16 +426,11 @@ async function main() {
   // ── 5. UserRole Assignments ─────────────────────────────────────────────
   console.log('Creating user role assignments...');
   const userRoleAssignments = [
-    { user: superAdmin, roleCode: 'SUPER_ADMIN' },
-    { user: branchMgr1, roleCode: 'BRANCH_MANAGER' },
-    { user: branchMgr2, roleCode: 'BRANCH_MANAGER' },
-    { user: creditOff1, roleCode: 'CREDIT_OFFICER' },
-    { user: creditOff2, roleCode: 'CREDIT_OFFICER' },
-    { user: creditOff3, roleCode: 'CREDIT_HEAD' },
-    { user: opsOff1, roleCode: 'OPS_OFFICER' },
-    { user: opsOff2, roleCode: 'OPS_OFFICER' },
-    { user: collAgent, roleCode: 'COLLECTION_AGENT' },
-    { user: complianceOff, roleCode: 'COMPLIANCE_OFFICER' },
+    { user: adminUser, roleCode: 'QCASH_ADMIN' },
+    { user: branchMgr, roleCode: 'QCASH_BRANCH_MANAGER' },
+    { user: creditOff1, roleCode: 'QCASH_CREDIT_OFFICER' },
+    { user: creditOff2, roleCode: 'QCASH_CREDIT_OFFICER' },
+    { user: collAgent, roleCode: 'QCASH_COLLECTION_AGENT' },
   ];
 
   for (const ura of userRoleAssignments) {
@@ -556,75 +447,30 @@ async function main() {
   console.log('Creating loan products...');
   const productDefs = [
     {
-      name: 'Personal Loan',
-      code: 'PL',
-      productType: 'PERSONAL_LOAN' as const,
-      minAmountPaisa: 5000000,        // 50,000
-      maxAmountPaisa: 1000000000,     // 1,00,00,000 - corrected to 10L = 10,00,000 * 100 = 100000000?
-      // 50K = 50000 * 100 = 5000000 paisa  ✓
-      // 10L = 1000000 * 100 = 100000000 paisa
+      name: 'Microfinance',
+      code: 'QCASH_MF',
+      productType: 'MICROFINANCE' as const,
+      minAmountPaisa: 500000,      // 5,000
+      maxAmountPaisa: 5000000,     // 50,000
       minTenureMonths: 12,
-      maxTenureMonths: 60,
-      minInterestRateBps: 1400,
+      maxTenureMonths: 24,
+      minInterestRateBps: 2000,
+      maxInterestRateBps: 2600,
+      processingFeePercent: new Decimal('1.00'),
+      isSecured: false,
+    },
+    {
+      name: 'Personal Loan',
+      code: 'QCASH_PL',
+      productType: 'PERSONAL_LOAN' as const,
+      minAmountPaisa: 5000000,     // 50,000
+      maxAmountPaisa: 30000000,    // 3,00,000
+      minTenureMonths: 12,
+      maxTenureMonths: 36,
+      minInterestRateBps: 1800,
       maxInterestRateBps: 2400,
       processingFeePercent: new Decimal('2.00'),
       isSecured: false,
-    },
-    {
-      name: 'Business Loan',
-      code: 'BL',
-      productType: 'BUSINESS_LOAN' as const,
-      minAmountPaisa: 20000000,       // 2L = 200000 * 100 = 20000000
-      maxAmountPaisa: 500000000,      // 50L = 5000000 * 100 = 500000000
-      minTenureMonths: 12,
-      maxTenureMonths: 60,
-      minInterestRateBps: 1500,
-      maxInterestRateBps: 2200,
-      processingFeePercent: new Decimal('1.50'),
-      isSecured: false,
-    },
-    {
-      name: 'Vehicle Finance',
-      code: 'VF',
-      productType: 'VEHICLE_FINANCE' as const,
-      minAmountPaisa: 10000000,       // 1L
-      maxAmountPaisa: 250000000,      // 25L
-      minTenureMonths: 12,
-      maxTenureMonths: 60,
-      minInterestRateBps: 1200,
-      maxInterestRateBps: 1800,
-      processingFeePercent: new Decimal('1.00'),
-      isSecured: true,
-      collateralTypes: ['VEHICLE'],
-    },
-    {
-      name: 'Loan Against Property',
-      code: 'LAP',
-      productType: 'LAP' as const,
-      minAmountPaisa: 50000000,       // 5L
-      maxAmountPaisa: 2000000000,     // 2Cr = 20000000 * 100 = 2000000000
-      minTenureMonths: 36,
-      maxTenureMonths: 180,
-      minInterestRateBps: 1000,
-      maxInterestRateBps: 1600,
-      processingFeePercent: new Decimal('0.75'),
-      isSecured: true,
-      collateralTypes: ['PROPERTY'],
-    },
-    {
-      name: 'Gold Loan',
-      code: 'GL',
-      productType: 'GOLD_LOAN' as const,
-      minAmountPaisa: 1000000,        // 10K
-      maxAmountPaisa: 250000000,      // 25L = 2500000 * 100 = 250000000
-      // But instructions say 2500000000 (25 Cr?) - keeping as specified
-      minTenureMonths: 3,
-      maxTenureMonths: 24,
-      minInterestRateBps: 1200,
-      maxInterestRateBps: 1800,
-      processingFeePercent: new Decimal('0.50'),
-      isSecured: true,
-      collateralTypes: ['GOLD'],
     },
   ];
 
@@ -643,8 +489,7 @@ async function main() {
         minInterestRateBps: pd.minInterestRateBps,
         maxInterestRateBps: pd.maxInterestRateBps,
         processingFeePercent: pd.processingFeePercent,
-        isSecured: pd.isSecured ?? false,
-        collateralTypes: pd.collateralTypes ?? undefined,
+        isSecured: pd.isSecured,
         isActive: true,
         settings: {},
       },
@@ -655,34 +500,34 @@ async function main() {
 
   // ── 7. Customers ────────────────────────────────────────────────────────
   console.log('Creating customers...');
-  const kycDistribution: ('VERIFIED' | 'PENDING' | 'REJECTED')[] = [
-    ...Array(40).fill('VERIFIED'),
-    ...Array(8).fill('PENDING'),
-    ...Array(2).fill('REJECTED'),
-  ];
-  const empDistribution: ('SALARIED' | 'SELF_EMPLOYED_PROFESSIONAL' | 'SELF_EMPLOYED_BUSINESS')[] = [
-    ...Array(30).fill('SALARIED'),
-    ...Array(13).fill('SELF_EMPLOYED_PROFESSIONAL'),
-    ...Array(7).fill('SELF_EMPLOYED_BUSINESS'),
+
+  const empDistribution: ('SALARIED' | 'SELF_EMPLOYED_BUSINESS' | 'HOMEMAKER' | 'SELF_EMPLOYED_PROFESSIONAL')[] = [
+    ...Array(8).fill('SALARIED'),
+    ...Array(6).fill('SELF_EMPLOYED_BUSINESS'),
+    ...Array(4).fill('HOMEMAKER'),
+    ...Array(2).fill('SELF_EMPLOYED_PROFESSIONAL'),
   ];
 
   const customers: Awaited<ReturnType<typeof prisma.customer.create>>[] = [];
-  for (let i = 0; i < 50; i++) {
-    const isMale = faker.datatype.boolean();
+  for (let i = 0; i < 20; i++) {
+    const isMale = i % 3 !== 0; // Mix of genders
     const firstName = isMale
       ? faker.helpers.arrayElement(INDIAN_FIRST_NAMES_MALE)
       : faker.helpers.arrayElement(INDIAN_FIRST_NAMES_FEMALE);
-    const lastName = faker.helpers.arrayElement(INDIAN_LAST_NAMES);
+    const lastName = faker.helpers.arrayElement(INDIAN_LAST_NAMES_MAHARASHTRA);
     const fullName = `${firstName} ${lastName}`;
     const addr = randomIndianAddress();
-    const empType = empDistribution[i];
-    const kycStatus = kycDistribution[i];
+    const empType = empDistribution[i % empDistribution.length];
     const dob = faker.date.birthdate({ min: 22, max: 55, mode: 'age' });
+    const isVerified = i < 16; // 16 verified, 4 pending
+
+    const groupNames = ['Sahyog', 'Vikas', 'Pragati', 'Shakti', 'Unnati'];
+    const centerNames = ['Center A - Pune', 'Center B - Nashik', 'Center C - Hadapsar', 'Center D - Pimpri', 'Center E - Nashik'];
 
     const customer = await prisma.customer.create({
       data: {
         organizationId: org.id,
-        customerNumber: `GROWTH/CUST/${pad(i + 1, 6)}`,
+        customerNumber: `QCASH/CUST/${pad(i + 1, 6)}`,
         customerType: 'INDIVIDUAL',
         firstName,
         lastName,
@@ -707,12 +552,18 @@ async function main() {
           ? faker.helpers.arrayElement(EMPLOYER_NAMES)
           : empType === 'SELF_EMPLOYED_PROFESSIONAL'
             ? `${firstName} & Associates`
-            : `${lastName} Enterprises`,
-        monthlyIncomePaisa: faker.number.int({ min: 2500000, max: 50000000 }), // 25K - 5L
-        kycStatus,
-        riskCategory: kycStatus === 'VERIFIED'
+            : empType === 'SELF_EMPLOYED_BUSINESS'
+              ? `${lastName} Enterprises`
+              : null,
+        monthlyIncomePaisa: faker.number.int({ min: 800000, max: 5000000 }), // 8K - 50K
+        kycStatus: isVerified ? 'VERIFIED' : 'PENDING',
+        riskCategory: isVerified
           ? faker.helpers.arrayElement(['LOW', 'MEDIUM', 'HIGH'] as const)
           : null,
+        customFields: {
+          group_name: groupNames[i % groupNames.length],
+          center_name: centerNames[i % centerNames.length],
+        },
       },
     });
     customers.push(customer);
@@ -721,22 +572,19 @@ async function main() {
 
   // ── 8. DSAs ─────────────────────────────────────────────────────────────
   console.log('Creating DSAs...');
-  const dsaTypeDistribution: ('INDIVIDUAL' | 'AGENCY' | 'DIGITAL_PARTNER')[] = [
-    ...Array(15).fill('INDIVIDUAL'),
-    ...Array(4).fill('AGENCY'),
-    ...Array(1).fill('DIGITAL_PARTNER'),
+  const dsas: Awaited<ReturnType<typeof prisma.dSA.create>>[] = [];
+  const dsaTypeDistribution: ('INDIVIDUAL' | 'AGENCY')[] = [
+    ...Array(3).fill('INDIVIDUAL'),
+    ...Array(2).fill('AGENCY'),
   ];
 
-  const dsas: Awaited<ReturnType<typeof prisma.dSA.create>>[] = [];
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 5; i++) {
     const dsaType = dsaTypeDistribution[i];
     const firstName = faker.helpers.arrayElement(INDIAN_FIRST_NAMES_MALE);
-    const lastName = faker.helpers.arrayElement(INDIAN_LAST_NAMES);
+    const lastName = faker.helpers.arrayElement(INDIAN_LAST_NAMES_MAHARASHTRA);
     const name = dsaType === 'INDIVIDUAL'
       ? `${firstName} ${lastName}`
-      : dsaType === 'AGENCY'
-        ? `${lastName} Financial Services`
-        : `LendingPartner Digital Pvt Ltd`;
+      : `${lastName} Financial Services`;
 
     const dsa = await prisma.dSA.create({
       data: {
@@ -744,40 +592,40 @@ async function main() {
         name,
         contactPerson: `${firstName} ${lastName}`,
         phone: randomIndianPhone(),
-        email: `dsa${pad(i + 1, 3)}@partner.in`,
+        email: `qcdsa${pad(i + 1, 3)}@partner.in`,
         panNumber: randomPAN(),
-        dsaCode: `DSA${pad(i + 1, 3)}`,
+        dsaCode: `QCDSA${pad(i + 1, 3)}`,
         dsaType,
         commissionPercent: new Decimal(
-          (faker.number.float({ min: 0.5, max: 2.0, fractionDigits: 2 })).toFixed(2),
+          (faker.number.float({ min: 0.5, max: 1.5, fractionDigits: 2 })).toFixed(2),
         ),
-        products: ['PL', 'BL', 'VF'],
+        products: ['QCASH_MF', 'QCASH_PL'],
         isActive: true,
-        empanelmentDate: faker.date.past({ years: 3 }),
+        empanelmentDate: faker.date.past({ years: 2 }),
       },
     });
     dsas.push(dsa);
   }
   console.log(`  ${dsas.length} DSAs created`);
 
-  // ── 9. BRE Rules for Personal Loan ─────────────────────────────────────
-  console.log('Creating BRE rules...');
-  const plProduct = products['PL'];
+  // ── 9. BRE Rules for Microfinance Product ───────────────────────────────
+  console.log('Creating BRE rules for MF product...');
+  const mfProduct = products['QCASH_MF'];
   const effectiveFrom = new Date('2024-01-01');
 
   const breRulesData = [
     // ELIGIBILITY rules
     {
-      name: 'Age Eligibility',
-      description: 'Applicant must be between 21 and 58 years of age',
+      name: 'Age Eligibility MF',
+      description: 'Applicant must be between 18 and 60 years of age',
       category: 'ELIGIBILITY' as const,
       priority: 1,
-      condition: { field: 'applicant.age', operator: 'BETWEEN', value: [21, 58] },
+      condition: { field: 'applicant.age', operator: 'BETWEEN', value: [18, 60] },
       action: 'REJECT' as const,
-      reason: 'Applicant age is outside eligible range of 21-58 years',
+      reason: 'Applicant age is outside MFI eligible range of 18-60 years',
     },
     {
-      name: 'KYC Status Check',
+      name: 'KYC Status Check MF',
       description: 'Applicant KYC must be verified',
       category: 'ELIGIBILITY' as const,
       priority: 2,
@@ -787,102 +635,64 @@ async function main() {
     },
     // POLICY rules
     {
-      name: 'Minimum CIBIL Score',
-      description: 'Bureau score must be at least 650',
+      name: 'Minimum CIBIL Score MF',
+      description: 'Bureau score must be at least 550 (simpler MFI threshold)',
       category: 'POLICY' as const,
       priority: 10,
-      condition: { field: 'bureau.score', operator: 'GTE', value: 650 },
+      condition: { field: 'bureau.score', operator: 'GTE', value: 550 },
       action: 'REJECT' as const,
-      reason: 'Bureau score is below minimum threshold of 650',
+      reason: 'Bureau score is below MFI minimum threshold of 550',
     },
     {
-      name: 'FOIR Check',
-      description: 'Fixed Obligations to Income Ratio must not exceed 60%',
+      name: 'No Active NPA MF',
+      description: 'Applicant must not have any active NPA account',
       category: 'POLICY' as const,
       priority: 11,
-      condition: { field: 'calculated.foir', operator: 'LTE', value: 60 },
-      action: 'REJECT' as const,
-      reason: 'FOIR exceeds maximum allowed limit of 60%',
-    },
-    {
-      name: 'No Write-Off',
-      description: 'Applicant must not have any write-off in bureau',
-      category: 'POLICY' as const,
-      priority: 12,
       condition: { field: 'bureau.hasWriteOff', operator: 'EQ', value: false },
       action: 'REJECT' as const,
-      reason: 'Applicant has a write-off record in bureau',
+      reason: 'Applicant has a write-off record - ineligible for microfinance',
     },
     {
-      name: 'Max DPD Last 12 Months',
-      description: 'Maximum DPD in last 12 months should not exceed 30',
+      name: 'Max Active MFI Loans',
+      description: 'Applicant must not have more than 2 active MFI loans',
       category: 'POLICY' as const,
-      priority: 13,
-      condition: { field: 'bureau.maxDpdLast12Months', operator: 'LTE', value: 30 },
+      priority: 12,
+      condition: { field: 'bureau.totalActiveLoans', operator: 'LTE', value: 2 },
       action: 'REJECT' as const,
-      reason: 'DPD in last 12 months exceeds 30 days',
-    },
-    {
-      name: 'Enquiries Last 3 Months',
-      description: 'Bureau enquiries in last 3 months should not exceed 5',
-      category: 'POLICY' as const,
-      priority: 14,
-      condition: { field: 'bureau.enquiriesLast3Months', operator: 'LTE', value: 5 },
-      action: 'REJECT' as const,
-      reason: 'Excessive bureau enquiries in last 3 months (more than 5)',
-    },
-    // DEVIATION rule
-    {
-      name: 'Score Deviation Band',
-      description: 'Scores between 620-649 require manual review',
-      category: 'DEVIATION' as const,
-      priority: 20,
-      condition: { field: 'bureau.score', operator: 'BETWEEN', value: [620, 649] },
-      action: 'REFER' as const,
-      reason: 'Bureau score is in deviation band (620-649), requires credit head approval',
+      reason: 'Applicant has more than 2 active loans (MFI indebtedness limit)',
     },
     // PRICING rules
     {
-      name: 'Pricing - Prime (750+)',
-      description: 'Best rate for scores 750 and above',
+      name: 'Pricing - Good Score (650+)',
+      description: 'Lower rate for scores 650 and above',
       category: 'PRICING' as const,
-      priority: 30,
-      condition: { field: 'bureau.score', operator: 'GTE', value: 750 },
+      priority: 20,
+      condition: { field: 'bureau.score', operator: 'GTE', value: 650 },
       action: 'APPROVE' as const,
-      reason: 'Prime customer - offering best rate',
-      outputRate: 1400,
+      reason: 'Good bureau score - offering lower MFI rate',
+      outputRate: 2000,
     },
     {
-      name: 'Pricing - Near Prime (700-749)',
-      description: 'Standard rate for scores between 700 and 749',
+      name: 'Pricing - Fair Score (550-649)',
+      description: 'Standard MFI rate for scores between 550 and 649',
       category: 'PRICING' as const,
-      priority: 31,
-      condition: { field: 'bureau.score', operator: 'BETWEEN', value: [700, 749] },
+      priority: 21,
+      condition: { field: 'bureau.score', operator: 'BETWEEN', value: [550, 649] },
       action: 'APPROVE' as const,
-      reason: 'Near prime customer - standard rate applied',
-      outputRate: 1600,
-    },
-    {
-      name: 'Pricing - Sub Prime (650-699)',
-      description: 'Higher rate for scores between 650 and 699',
-      category: 'PRICING' as const,
-      priority: 32,
-      condition: { field: 'bureau.score', operator: 'BETWEEN', value: [650, 699] },
-      action: 'APPROVE' as const,
-      reason: 'Sub prime customer - risk adjusted rate applied',
-      outputRate: 1800,
+      reason: 'Fair bureau score - standard MFI rate applied',
+      outputRate: 2400,
     },
   ];
 
   for (const rule of breRulesData) {
-    const conditionData = rule.outputRate !== undefined
-      ? { ...rule.condition, outputInterestRateBps: rule.outputRate }
+    const conditionData = (rule as any).outputRate !== undefined
+      ? { ...rule.condition, outputInterestRateBps: (rule as any).outputRate }
       : rule.condition;
 
     await prisma.breRule.create({
       data: {
         organizationId: org.id,
-        productId: plProduct.id,
+        productId: mfProduct.id,
         name: rule.name,
         description: rule.description,
         category: rule.category,
@@ -896,46 +706,40 @@ async function main() {
       },
     });
   }
-  console.log(`  ${breRulesData.length} BRE rules created`);
+  console.log(`  ${breRulesData.length} BRE rules created for MF product`);
 
   // ── 10. Loan Applications ───────────────────────────────────────────────
   console.log('Creating loan applications...');
 
-  const appStatusCounts: { status: string; count: number }[] = [
-    { status: 'LEAD', count: 5 },
-    { status: 'BUREAU_CHECK', count: 3 },
-    { status: 'UNDERWRITING', count: 4 },
-    { status: 'SANCTIONED', count: 3 },
-    { status: 'DISBURSED', count: 3 },
-    { status: 'REJECTED', count: 2 },
+  const appStatuses = [
+    'LEAD', 'LEAD',
+    'BUREAU_CHECK',
+    'UNDERWRITING', 'UNDERWRITING',
+    'SANCTIONED',
+    'DISBURSED', 'DISBURSED', 'DISBURSED',
+    'REJECTED',
   ];
 
-  const allApplicationStatuses: string[] = [];
-  for (const { status, count } of appStatusCounts) {
-    for (let i = 0; i < count; i++) allApplicationStatuses.push(status);
-  }
-
-  const loanApplications: Awaited<ReturnType<typeof prisma.loanApplication.create>>[] = [];
+  const branches = [branchHO, branchNSK];
   const productCodes = Object.keys(products);
-  const branches = [branchHO, branchMUM, branchDEL];
+  const loanApplications: Awaited<ReturnType<typeof prisma.loanApplication.create>>[] = [];
 
-  for (let i = 0; i < 20; i++) {
-    const status = allApplicationStatuses[i];
+  for (let i = 0; i < 10; i++) {
+    const status = appStatuses[i];
     const customer = customers[i];
     const productCode = productCodes[i % productCodes.length];
     const product = products[productCode];
     const branch = branches[i % branches.length];
-    const creditOfficers = [creditOff1, creditOff2, creditOff3];
-    const assignedTo = creditOfficers[i % creditOfficers.length];
+    const creditOfficer = i % 2 === 0 ? creditOff1 : creditOff2;
     const dsa = i % 3 === 0 ? dsas[i % dsas.length] : null;
 
     const requestedAmount = faker.number.int({
       min: product.minAmountPaisa,
-      max: Math.min(product.maxAmountPaisa, 50000000), // cap at 5L for realistic data
+      max: product.maxAmountPaisa,
     });
     const requestedTenure = faker.number.int({
       min: product.minTenureMonths,
-      max: Math.min(product.maxTenureMonths, 60),
+      max: product.maxTenureMonths,
     });
 
     const isSanctioned = ['SANCTIONED', 'DISBURSED'].includes(status);
@@ -944,21 +748,21 @@ async function main() {
     const appData: Parameters<typeof prisma.loanApplication.create>[0]['data'] = {
       organizationId: org.id,
       branchId: branch.id,
-      applicationNumber: `GROWTH/${productCode}/2025/${pad(i + 1, 6)}`,
+      applicationNumber: `QCASH/${productCode}/2025/${pad(i + 1, 6)}`,
       customerId: customer.id,
       productId: product.id,
       requestedAmountPaisa: requestedAmount,
       requestedTenureMonths: requestedTenure,
       status: status as any,
-      sourceType: dsa ? 'DSA' : faker.helpers.arrayElement(['BRANCH', 'WALKIN', 'WEB']) as any,
+      sourceType: dsa ? 'DSA' : faker.helpers.arrayElement(['BRANCH', 'WALKIN']) as any,
       dsaId: dsa ? dsa.id : null,
-      assignedToId: assignedTo.id,
-      sanctionedAmountPaisa: isSanctioned ? Math.floor(requestedAmount * 0.9) : null,
+      assignedToId: creditOfficer.id,
+      sanctionedAmountPaisa: isSanctioned ? Math.floor(requestedAmount * 0.95) : null,
       sanctionedTenureMonths: isSanctioned ? requestedTenure : null,
       sanctionedInterestRateBps: isSanctioned
         ? faker.number.int({ min: product.minInterestRateBps, max: product.maxInterestRateBps })
         : null,
-      rejectionReason: isRejected ? 'Low bureau score - below minimum threshold of 650' : null,
+      rejectionReason: isRejected ? 'Bureau score below MFI minimum threshold of 550' : null,
     };
 
     const app = await prisma.loanApplication.create({ data: appData });
@@ -969,28 +773,27 @@ async function main() {
   // ── 11. Active Loans with EMI Schedules ─────────────────────────────────
   console.log('Creating loans and EMI schedules...');
 
-  // Use DISBURSED applications (indices 14, 15, 16 = 3 disbursed apps)
-  // We need 10 loans, so also create standalone applications for remaining 7
+  // Use DISBURSED applications (3) + create 2 more
   const disbursedApps = loanApplications.filter((a) => a.status === 'DISBURSED');
 
-  // Create extra applications for the remaining 7 loans
+  // Create 2 more applications for additional loans
   const extraLoanApps: Awaited<ReturnType<typeof prisma.loanApplication.create>>[] = [];
-  for (let i = 0; i < 7; i++) {
-    const customer = customers[30 + i];
+  for (let i = 0; i < 2; i++) {
+    const customer = customers[10 + i];
     const productCode = productCodes[i % productCodes.length];
     const product = products[productCode];
     const branch = branches[i % branches.length];
-    const creditOfficer = [creditOff1, creditOff2, creditOff3][i % 3];
+    const creditOfficer = i % 2 === 0 ? creditOff1 : creditOff2;
 
     const requestedAmount = faker.number.int({
       min: product.minAmountPaisa,
-      max: Math.min(product.maxAmountPaisa, 50000000),
+      max: product.maxAmountPaisa,
     });
     const requestedTenure = faker.number.int({
       min: product.minTenureMonths,
-      max: Math.min(product.maxTenureMonths, 60),
+      max: product.maxTenureMonths,
     });
-    const rateForExtra = faker.number.int({
+    const rate = faker.number.int({
       min: product.minInterestRateBps,
       max: product.maxInterestRateBps,
     });
@@ -999,7 +802,7 @@ async function main() {
       data: {
         organizationId: org.id,
         branchId: branch.id,
-        applicationNumber: `GROWTH/${productCode}/2025/${pad(21 + i, 6)}`,
+        applicationNumber: `QCASH/${productCode}/2025/${pad(11 + i, 6)}`,
         customerId: customer.id,
         productId: product.id,
         requestedAmountPaisa: requestedAmount,
@@ -1007,9 +810,9 @@ async function main() {
         status: 'DISBURSED',
         sourceType: 'BRANCH',
         assignedToId: creditOfficer.id,
-        sanctionedAmountPaisa: Math.floor(requestedAmount * 0.9),
+        sanctionedAmountPaisa: Math.floor(requestedAmount * 0.95),
         sanctionedTenureMonths: requestedTenure,
-        sanctionedInterestRateBps: rateForExtra,
+        sanctionedInterestRateBps: rate,
       },
     });
     extraLoanApps.push(extraApp);
@@ -1017,37 +820,33 @@ async function main() {
 
   const allLoanApps = [...disbursedApps, ...extraLoanApps];
 
-  // Define loan scenarios: DPD 0 x6, DPD 15-25 x2, DPD 55 x1, DPD 120 x1
   const loanScenarios = [
     { dpd: 0, npa: 'STANDARD' as const },
     { dpd: 0, npa: 'STANDARD' as const },
     { dpd: 0, npa: 'STANDARD' as const },
-    { dpd: 0, npa: 'STANDARD' as const },
-    { dpd: 0, npa: 'STANDARD' as const },
-    { dpd: 0, npa: 'STANDARD' as const },
-    { dpd: 18, npa: 'SMA_0' as const },
-    { dpd: 23, npa: 'SMA_0' as const },
-    { dpd: 55, npa: 'SMA_2' as const },
-    { dpd: 120, npa: 'NPA_SUBSTANDARD' as const },
+    { dpd: 12, npa: 'SMA_0' as const },
+    { dpd: 45, npa: 'SMA_1' as const },
   ];
 
   const loans: Awaited<ReturnType<typeof prisma.loan.create>>[] = [];
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 5; i++) {
     const app = allLoanApps[i];
     const scenario = loanScenarios[i];
     const productCode = productCodes[i % productCodes.length];
     const product = products[productCode];
     const branch = branches[i % branches.length];
-    const customer = customers[i < 3 ? 14 + i : 30 + (i - 3)];
+    const customer = customers[i < 3 ? 6 + i : 10 + (i - 3)];
 
-    // Disbursement 6-18 months ago
-    const monthsAgo = faker.number.int({ min: 6, max: 18 });
+    const monthsAgo = faker.number.int({ min: 3, max: 12 });
     const disbursementDate = new Date();
     disbursementDate.setMonth(disbursementDate.getMonth() - monthsAgo);
-    disbursementDate.setDate(1); // 1st of month for clean schedule
+    disbursementDate.setDate(1);
 
-    const principalPaisa = app.sanctionedAmountPaisa ?? faker.number.int({ min: product.minAmountPaisa, max: 30000000 });
-    const tenureMonths = app.sanctionedTenureMonths ?? 36;
+    const principalPaisa = app.sanctionedAmountPaisa ?? faker.number.int({
+      min: product.minAmountPaisa,
+      max: product.maxAmountPaisa,
+    });
+    const tenureMonths = app.sanctionedTenureMonths ?? product.minTenureMonths;
     const rateBps = app.sanctionedInterestRateBps ?? product.minInterestRateBps;
 
     const emiPaisa = calculateEMI(principalPaisa, rateBps, tenureMonths);
@@ -1056,7 +855,6 @@ async function main() {
     const maturityDate = new Date(disbursementDate);
     maturityDate.setMonth(maturityDate.getMonth() + tenureMonths);
 
-    // Calculate how many EMIs have passed
     const emisPaid = Math.max(0, monthsAgo - 1);
     const outstandingPrincipal = Math.max(
       0,
@@ -1067,7 +865,7 @@ async function main() {
       data: {
         organizationId: org.id,
         branchId: branch.id,
-        loanNumber: `GROWTH/LN/2025/${pad(i + 1, 6)}`,
+        loanNumber: `QCASH/LN/2025/${pad(i + 1, 6)}`,
         applicationId: app.id,
         customerId: customer.id,
         productId: product.id,
@@ -1086,7 +884,6 @@ async function main() {
           : 0,
         dpd: scenario.dpd,
         npaClassification: scenario.npa,
-        npaDate: scenario.dpd >= 90 ? new Date() : null,
         loanStatus: 'ACTIVE',
         maturityDate,
       },
@@ -1111,7 +908,6 @@ async function main() {
 
       if (isPast) {
         if (scenario.dpd === 0) {
-          // All past EMIs paid
           schedStatus = 'PAID';
           paidAmount = sched.emiAmountPaisa;
           paidPrincipal = sched.principalComponentPaisa;
@@ -1119,7 +915,6 @@ async function main() {
           paidDate = new Date(sched.dueDate);
           paidDate.setDate(paidDate.getDate() + faker.number.int({ min: 0, max: 3 }));
         } else if (scenario.dpd <= 30) {
-          // Most paid, last 1 overdue
           if (installmentMonthsAgo >= 1) {
             schedStatus = 'PAID';
             paidAmount = sched.emiAmountPaisa;
@@ -1129,19 +924,8 @@ async function main() {
           } else {
             schedStatus = 'OVERDUE';
           }
-        } else if (scenario.dpd <= 60) {
-          if (installmentMonthsAgo >= 2) {
-            schedStatus = 'PAID';
-            paidAmount = sched.emiAmountPaisa;
-            paidPrincipal = sched.principalComponentPaisa;
-            paidInterest = sched.interestComponentPaisa;
-            paidDate = new Date(sched.dueDate);
-          } else {
-            schedStatus = 'OVERDUE';
-          }
         } else {
-          // DPD 120 - last 4 months overdue
-          if (installmentMonthsAgo >= 4) {
+          if (installmentMonthsAgo >= 2) {
             schedStatus = 'PAID';
             paidAmount = sched.emiAmountPaisa;
             paidPrincipal = sched.principalComponentPaisa;
@@ -1177,12 +961,7 @@ async function main() {
 
     // Create collection tasks for overdue loans
     if (scenario.dpd > 0) {
-      const taskType = scenario.dpd <= 30
-        ? 'TELECALL'
-        : scenario.dpd <= 60
-          ? 'FIELD_VISIT'
-          : 'LEGAL_NOTICE';
-
+      const taskType = scenario.dpd <= 30 ? 'TELECALL' : 'FIELD_VISIT';
       await prisma.collectionTask.create({
         data: {
           organizationId: org.id,
@@ -1193,62 +972,135 @@ async function main() {
           scheduledDate: new Date(),
           status: 'PENDING',
           disposition: 'NO_DISPOSITION',
-          remarks: `DPD ${scenario.dpd} - Follow up required`,
+          remarks: `DPD ${scenario.dpd} - MFI follow up required`,
         },
       });
     }
   }
   console.log(`  ${loans.length} loans created with EMI schedules`);
 
-  // ── 12. Custom Field Definitions for Growth Finance ──────────────────────
+  // ── 12. Collection Strategies ────────────────────────────────────────────
+  console.log('Creating collection strategies...');
+
+  const collectionStrategies = [
+    {
+      name: 'Early DPD Strategy (1-15)',
+      dpdFrom: 1,
+      dpdTo: 15,
+      actions: [
+        { dayOffset: 1, taskType: 'SMS', channel: 'SMS', template: 'EMI_REMINDER' },
+        { dayOffset: 5, taskType: 'TELECALL', channel: 'PHONE', template: 'SOFT_REMINDER' },
+        { dayOffset: 10, taskType: 'FIELD_VISIT', template: 'FIELD_COLLECTION' },
+      ],
+    },
+    {
+      name: 'Mid DPD Strategy (16-30)',
+      dpdFrom: 16,
+      dpdTo: 30,
+      actions: [
+        { dayOffset: 1, taskType: 'TELECALL', channel: 'PHONE', template: 'FIRM_REMINDER' },
+        { dayOffset: 5, taskType: 'FIELD_VISIT', template: 'FIELD_COLLECTION' },
+        { dayOffset: 15, taskType: 'FIELD_VISIT', template: 'GROUP_MEETING' },
+      ],
+    },
+    {
+      name: 'High DPD Strategy (31-60)',
+      dpdFrom: 31,
+      dpdTo: 60,
+      actions: [
+        { dayOffset: 1, taskType: 'AGENCY_ALLOCATION', template: 'LEGAL_WARNING' },
+        { dayOffset: 10, taskType: 'FIELD_VISIT', template: 'LEGAL_FIELD_VISIT' },
+      ],
+    },
+  ];
+
+  for (const strategy of collectionStrategies) {
+    await prisma.collectionStrategy.create({
+      data: {
+        organizationId: org.id,
+        name: strategy.name,
+        dpdFrom: strategy.dpdFrom,
+        dpdTo: strategy.dpdTo,
+        actions: strategy.actions,
+        isActive: true,
+      },
+    });
+  }
+  console.log(`  ${collectionStrategies.length} collection strategies created`);
+
+  // ── 13. GL Accounts ─────────────────────────────────────────────────────
+  console.log('Creating GL accounts...');
+
+  const glAccountDefs = [
+    { accountCode: '1000', accountName: 'MFI Loan Assets', accountType: 'ASSET', parentCode: null },
+    { accountCode: '1100', accountName: 'Accrued Interest Receivable', accountType: 'ASSET', parentCode: '1000' },
+    { accountCode: '1200', accountName: 'Provision for NPA', accountType: 'ASSET', parentCode: '1000' },
+    { accountCode: '2000', accountName: 'Bank Account - Current', accountType: 'ASSET', parentCode: null },
+    { accountCode: '2100', accountName: 'Cash in Hand', accountType: 'ASSET', parentCode: null },
+    { accountCode: '3000', accountName: 'Borrowings - Bank', accountType: 'LIABILITY', parentCode: null },
+    { accountCode: '3100', accountName: 'Interest Payable', accountType: 'LIABILITY', parentCode: '3000' },
+    { accountCode: '4000', accountName: 'Interest Income - MFI', accountType: 'INCOME', parentCode: null },
+    { accountCode: '4100', accountName: 'Processing Fee Income', accountType: 'INCOME', parentCode: null },
+    { accountCode: '4200', accountName: 'Penal Interest Income', accountType: 'INCOME', parentCode: null },
+    { accountCode: '5000', accountName: 'Interest Expense', accountType: 'EXPENSE', parentCode: null },
+    { accountCode: '5100', accountName: 'Provision Expense', accountType: 'EXPENSE', parentCode: null },
+    { accountCode: '5200', accountName: 'Write-off Expense', accountType: 'EXPENSE', parentCode: null },
+    { accountCode: '6000', accountName: 'Share Capital', accountType: 'EQUITY', parentCode: null },
+    { accountCode: '6100', accountName: 'Retained Earnings', accountType: 'EQUITY', parentCode: null },
+  ];
+
+  for (const account of glAccountDefs) {
+    await prisma.glAccount.create({
+      data: {
+        organizationId: org.id,
+        accountCode: account.accountCode,
+        accountName: account.accountName,
+        accountType: account.accountType,
+        parentCode: account.parentCode,
+        isActive: true,
+      },
+    });
+  }
+  console.log(`  ${glAccountDefs.length} GL accounts created`);
+
+  // ── 14. Custom Field Definitions ─────────────────────────────────────────
   console.log('Creating custom field definitions...');
 
   const customFieldDefs = [
     // Customer fields
     {
       entityType: 'CUSTOMER',
-      fieldKey: 'spouse_name',
-      fieldLabel: 'Spouse Name',
+      fieldKey: 'group_name',
+      fieldLabel: 'Group Name',
+      fieldType: 'STRING',
+      isRequired: true,
+      isSearchable: true,
+      isVisibleInList: true,
+      displayOrder: 1,
+      sectionName: 'MFI Group Details',
+    },
+    {
+      entityType: 'CUSTOMER',
+      fieldKey: 'center_name',
+      fieldLabel: 'Center Name',
+      fieldType: 'STRING',
+      isRequired: true,
+      isSearchable: true,
+      isVisibleInList: true,
+      displayOrder: 2,
+      sectionName: 'MFI Group Details',
+    },
+    // LoanApplication field
+    {
+      entityType: 'LOAN_APPLICATION',
+      fieldKey: 'group_leader_name',
+      fieldLabel: 'Group Leader Name',
       fieldType: 'STRING',
       isRequired: false,
       isSearchable: false,
       isVisibleInList: false,
       displayOrder: 1,
-      sectionName: 'Personal Details',
-    },
-    {
-      entityType: 'CUSTOMER',
-      fieldKey: 'annual_income_declared',
-      fieldLabel: 'Annual Income Declared',
-      fieldType: 'CURRENCY',
-      isRequired: true,
-      isSearchable: false,
-      isVisibleInList: false,
-      displayOrder: 2,
-      sectionName: 'Financial Details',
-    },
-    // LoanApplication fields
-    {
-      entityType: 'LOAN_APPLICATION',
-      fieldKey: 'purpose_detail',
-      fieldLabel: 'Purpose Detail',
-      fieldType: 'TEXTAREA',
-      isRequired: false,
-      isSearchable: false,
-      isVisibleInList: false,
-      displayOrder: 1,
-      sectionName: 'Loan Purpose',
-    },
-    {
-      entityType: 'LOAN_APPLICATION',
-      fieldKey: 'employer_verification',
-      fieldLabel: 'Employer Verification Done',
-      fieldType: 'BOOLEAN',
-      isRequired: false,
-      isSearchable: false,
-      isVisibleInList: true,
-      displayOrder: 2,
-      sectionName: 'Verification',
+      sectionName: 'Group Details',
     },
   ];
 
@@ -1271,110 +1123,26 @@ async function main() {
   }
   console.log(`  ${customFieldDefs.length} custom field definitions created`);
 
-  // ── 13. Collection Strategies for Growth Finance ─────────────────────────
-  console.log('Creating collection strategies...');
-
-  const collectionStrategies = [
-    {
-      name: 'Strategy A - Early DPD (1-30)',
-      dpdFrom: 1,
-      dpdTo: 30,
-      actions: [
-        { dayOffset: 1, taskType: 'SMS', channel: 'SMS', template: 'EMI_DUE_REMINDER' },
-        { dayOffset: 3, taskType: 'WHATSAPP', channel: 'WHATSAPP', template: 'SOFT_FOLLOW_UP' },
-        { dayOffset: 7, taskType: 'IVR', channel: 'IVR', template: 'IVR_REMINDER' },
-        { dayOffset: 10, taskType: 'TELECALL', channel: 'PHONE', template: 'AGENT_REMINDER' },
-        { dayOffset: 15, taskType: 'WHATSAPP', channel: 'WHATSAPP', template: 'ESCALATION_NOTICE' },
-        { dayOffset: 25, taskType: 'FIELD_VISIT', template: 'FIELD_COLLECTION' },
-      ],
-    },
-    {
-      name: 'Strategy B - Mid DPD (31-60)',
-      dpdFrom: 31,
-      dpdTo: 60,
-      actions: [
-        { dayOffset: 1, taskType: 'TELECALL', channel: 'PHONE', template: 'FIRM_REMINDER' },
-        { dayOffset: 5, taskType: 'FIELD_VISIT', template: 'FIELD_COLLECTION' },
-        { dayOffset: 15, taskType: 'AGENCY_ALLOCATION', template: 'LEGAL_WARNING' },
-        { dayOffset: 30, taskType: 'LEGAL_NOTICE', template: 'LEGAL_NOTICE_DRAFT' },
-      ],
-    },
-    {
-      name: 'Strategy C - High DPD (61-90)',
-      dpdFrom: 61,
-      dpdTo: 90,
-      actions: [
-        { dayOffset: 1, taskType: 'LEGAL_NOTICE', template: 'SECTION_138_NOTICE' },
-        { dayOffset: 7, taskType: 'TELECALL', channel: 'PHONE', template: 'POST_NOTICE_CALL' },
-        { dayOffset: 15, taskType: 'FIELD_VISIT', template: 'LEGAL_FIELD_VISIT' },
-        { dayOffset: 25, taskType: 'AGENCY_ALLOCATION', template: 'RECOVERY_AGENCY' },
-      ],
-    },
-  ];
-
-  for (const strategy of collectionStrategies) {
-    await prisma.collectionStrategy.create({
-      data: {
-        organizationId: org.id,
-        name: strategy.name,
-        dpdFrom: strategy.dpdFrom,
-        dpdTo: strategy.dpdTo,
-        actions: strategy.actions,
-        isActive: true,
-      },
-    });
-  }
-  console.log(`  ${collectionStrategies.length} collection strategies created`);
-
-  // ── 14. GL Accounts for Growth Finance ───────────────────────────────────
-  console.log('Creating GL accounts...');
-
-  const glAccountDefs = [
-    { accountCode: '1000', accountName: 'Loan Assets', accountType: 'ASSET', parentCode: null },
-    { accountCode: '1100', accountName: 'Accrued Interest Receivable', accountType: 'ASSET', parentCode: '1000' },
-    { accountCode: '2000', accountName: 'Bank Account - Current', accountType: 'ASSET', parentCode: null },
-    { accountCode: '3000', accountName: 'Interest Income', accountType: 'INCOME', parentCode: null },
-    { accountCode: '3100', accountName: 'Processing Fee Income', accountType: 'INCOME', parentCode: null },
-    { accountCode: '3200', accountName: 'Penal Interest Income', accountType: 'INCOME', parentCode: null },
-    { accountCode: '4000', accountName: 'Provision for NPA', accountType: 'EXPENSE', parentCode: null },
-    { accountCode: '5000', accountName: 'Write-off Expense', accountType: 'EXPENSE', parentCode: null },
-    { accountCode: '6000', accountName: 'Co-Lending Payable', accountType: 'LIABILITY', parentCode: null },
-  ];
-
-  for (const account of glAccountDefs) {
-    await prisma.glAccount.create({
-      data: {
-        organizationId: org.id,
-        accountCode: account.accountCode,
-        accountName: account.accountName,
-        accountType: account.accountType,
-        parentCode: account.parentCode,
-        isActive: true,
-      },
-    });
-  }
-  console.log(`  ${glAccountDefs.length} GL accounts created`);
-
-  console.log('\nSeed completed successfully!');
+  console.log('\nORG2 Seed completed successfully!');
   console.log('Summary:');
-  console.log('  1 Organization (Growth Finance Ltd)');
-  console.log('  3 Branches');
-  console.log('  10 Users');
-  console.log('  8 System Roles');
-  console.log('  5 Loan Products');
-  console.log('  50 Customers');
-  console.log('  20 DSAs');
-  console.log('  11 BRE Rules');
-  console.log('  27 Loan Applications');
-  console.log('  10 Active Loans with EMI schedules');
-  console.log(`  ${customFieldDefs.length} Custom Field Definitions`);
-  console.log(`  ${collectionStrategies.length} Collection Strategies`);
-  console.log(`  ${glAccountDefs.length} GL Accounts`);
+  console.log('  1 Organization (QuickCash NBFC)');
+  console.log('  2 Branches');
+  console.log('  5 Users');
+  console.log('  5 Roles');
+  console.log('  2 Loan Products');
+  console.log('  20 Customers');
+  console.log('  5 DSAs');
+  console.log(`  ${breRulesData.length} BRE Rules (MF product)`);
+  console.log('  12 Loan Applications');
+  console.log('  5 Active Loans with EMI schedules');
+  console.log('  3 Collection Strategies');
+  console.log('  15 GL Accounts');
+  console.log('  3 Custom Field Definitions');
 }
 
 main()
   .catch((e) => {
-    console.error('Seed failed:', e);
+    console.error('ORG2 Seed failed:', e);
     process.exit(1);
   })
   .finally(async () => {

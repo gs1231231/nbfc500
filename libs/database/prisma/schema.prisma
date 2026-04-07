@@ -279,26 +279,59 @@ model Organization {
   updatedBy             String?
   deletedAt             DateTime?
 
-  branches              Branch[]
-  users                 User[]
-  roles                 Role[]
-  auditLogs             AuditLog[]
-  customers             Customer[]
-  loanProducts          LoanProduct[]
-  loanApplications      LoanApplication[]
-  loans                 Loan[]
-  payments              Payment[]
-  bureauRequests        BureauRequest[]
-  breRules              BreRule[]
-  breDecisions          BreDecision[]
-  collectionTasks       CollectionTask[]
-  dsas                  DSA[]
-  coLendingPartners     CoLendingPartner[]
-  glEntries             GlEntry[]
-  documents             Document[]
+  branches               Branch[]
+  users                  User[]
+  roles                  Role[]
+  auditLogs              AuditLog[]
+  customers              Customer[]
+  loanProducts           LoanProduct[]
+  loanApplications       LoanApplication[]
+  loans                  Loan[]
+  payments               Payment[]
+  bureauRequests         BureauRequest[]
+  breRules               BreRule[]
+  breDecisions           BreDecision[]
+  collectionTasks        CollectionTask[]
+  dsas                   DSA[]
+  coLendingPartners      CoLendingPartner[]
+  glEntries              GlEntry[]
+  documents              Document[]
+  customFieldDefinitions CustomFieldDefinition[]
+  workflowTemplates      WorkflowTemplate[]
+  collectionStrategies   CollectionStrategy[]
+  glAccounts             GlAccount[]
+  notificationLogs       NotificationLog[]
 
   @@index([code])
   @@map("organizations")
+}
+
+model CustomFieldDefinition {
+  id              String   @id @default(uuid())
+  organizationId  String
+  entityType      String // CUSTOMER, LOAN_APPLICATION, LOAN, COLLECTION_TASK, DSA
+  fieldKey        String // e.g. "spouse_name", "annual_income_declared"
+  fieldLabel      String // e.g. "Spouse Name"
+  fieldType       String // STRING, NUMBER, DATE, BOOLEAN, ENUM, PHONE, EMAIL, PAN, AADHAAR, TEXTAREA, CURRENCY, PERCENTAGE
+  isRequired      Boolean  @default(false)
+  isSearchable    Boolean  @default(false)
+  isVisibleInList Boolean  @default(false)
+  enumOptions     Json? // ["Option A", "Option B"] for ENUM type
+  defaultValue    String?
+  validationRule  Json? // {min, max, regex, minLength, maxLength}
+  displayOrder    Int      @default(0)
+  sectionName     String? // UI section grouping
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       String?
+  updatedBy       String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, entityType, fieldKey])
+  @@index([organizationId, entityType])
+  @@map("custom_field_definitions")
 }
 
 model Branch {
@@ -321,9 +354,9 @@ model Branch {
   updatedBy      String?
   deletedAt      DateTime?
 
-  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  manager          User?        @relation("BranchManager", fields: [managerId], references: [id], onDelete: Restrict)
-  users            User[]       @relation("UserBranch")
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  manager          User?             @relation("BranchManager", fields: [managerId], references: [id], onDelete: Restrict)
+  users            User[]            @relation("UserBranch")
   loanApplications LoanApplication[]
   loans            Loan[]
   glEntries        GlEntry[]
@@ -354,10 +387,10 @@ model User {
   updatedBy      String?
   deletedAt      DateTime?
 
-  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch               Branch?      @relation("UserBranch", fields: [branchId], references: [id], onDelete: Restrict)
+  organization         Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch               Branch?           @relation("UserBranch", fields: [branchId], references: [id], onDelete: Restrict)
   userRoles            UserRole[]
-  managedBranches      Branch[]     @relation("BranchManager")
+  managedBranches      Branch[]          @relation("BranchManager")
   assignedApplications LoanApplication[] @relation("AssignedOfficer")
   auditLogs            AuditLog[]
 
@@ -368,17 +401,17 @@ model User {
 }
 
 model Role {
-  id             String    @id @default(uuid())
+  id             String   @id @default(uuid())
   organizationId String
   name           String
-  code           String    @unique
-  permissions    Json      @default("[]")
-  isSystemRole   Boolean   @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  code           String   @unique
+  permissions    Json     @default("[]")
+  isSystemRole   Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  userRoles      UserRole[]
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  userRoles    UserRole[]
 
   @@index([organizationId])
   @@map("roles")
@@ -390,8 +423,8 @@ model UserRole {
   roleId   String
   branchId String?
 
-  user     User    @relation(fields: [userId], references: [id], onDelete: Restrict)
-  role     Role    @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
 
   @@unique([userId, roleId])
   @@map("user_roles")
@@ -409,8 +442,8 @@ model AuditLog {
   userAgent      String?
   timestamp      DateTime    @default(now())
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@index([organizationId, entityType, entityId])
   @@index([timestamp])
@@ -452,17 +485,18 @@ model Customer {
   monthlyIncomePaisa    Int?
   kycStatus             KycStatus      @default(PENDING)
   riskCategory          RiskCategory?
+  customFields          Json           @default("{}")
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
   createdBy             String?
   updatedBy             String?
   deletedAt             DateTime?
 
-  organization          Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  loanApplications      LoanApplication[]
-  loans                 Loan[]
-  documents             Document[]
-  bureauRequests        BureauRequest[]
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loanApplications LoanApplication[]
+  loans            Loan[]
+  documents        Document[]
+  bureauRequests   BureauRequest[]
 
   @@index([organizationId])
   @@index([organizationId, phone])
@@ -471,32 +505,33 @@ model Customer {
 }
 
 model LoanProduct {
-  id                    String      @id @default(uuid())
-  organizationId        String
-  name                  String
-  code                  String      @unique
-  productType           ProductType
-  minAmountPaisa        Int
-  maxAmountPaisa        Int
-  minTenureMonths       Int
-  maxTenureMonths       Int
-  minInterestRateBps    Int
-  maxInterestRateBps    Int
-  processingFeePercent  Decimal     @db.Decimal(5, 2)
-  isSecured             Boolean     @default(false)
-  collateralTypes       Json?
-  isActive              Boolean     @default(true)
-  settings              Json        @default("{}")
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
-  createdBy             String?
-  updatedBy             String?
-  deletedAt             DateTime?
+  id                   String      @id @default(uuid())
+  organizationId       String
+  name                 String
+  code                 String      @unique
+  productType          ProductType
+  minAmountPaisa       Int
+  maxAmountPaisa       Int
+  minTenureMonths      Int
+  maxTenureMonths      Int
+  minInterestRateBps   Int
+  maxInterestRateBps   Int
+  processingFeePercent Decimal     @db.Decimal(5, 2)
+  isSecured            Boolean     @default(false)
+  collateralTypes      Json?
+  isActive             Boolean     @default(true)
+  settings             Json        @default("{}")
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  createdBy            String?
+  updatedBy            String?
+  deletedAt            DateTime?
 
-  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  loanApplications      LoanApplication[]
-  loans                 Loan[]
-  breRules              BreRule[]
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loanApplications  LoanApplication[]
+  loans             Loan[]
+  breRules          BreRule[]
+  workflowTemplates WorkflowTemplate[]
 
   @@index([organizationId])
   @@map("loan_products")
@@ -520,23 +555,25 @@ model LoanApplication {
   sanctionedInterestRateBps Int?
   rejectionReason           String?
   breDecisionId             String?
+  currentWorkflowStage      String?
+  customFields              Json              @default("{}")
   createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt
   createdBy                 String?
   updatedBy                 String?
   deletedAt                 DateTime?
 
-  organization              Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch                    Branch            @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  customer                  Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  product                   LoanProduct       @relation(fields: [productId], references: [id], onDelete: Restrict)
-  dsa                       DSA?              @relation(fields: [dsaId], references: [id], onDelete: Restrict)
-  assignedTo                User?             @relation("AssignedOfficer", fields: [assignedToId], references: [id], onDelete: Restrict)
-  breDecision               BreDecision?      @relation(fields: [breDecisionId], references: [id], onDelete: Restrict)
-  loans                     Loan[]
-  documents                 Document[]
-  bureauRequests            BureauRequest[]
-  statusHistory             ApplicationStatusHistory[]
+  organization   Organization               @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch         Branch                     @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  customer       Customer                   @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  product        LoanProduct                @relation(fields: [productId], references: [id], onDelete: Restrict)
+  dsa            DSA?                       @relation(fields: [dsaId], references: [id], onDelete: Restrict)
+  assignedTo     User?                      @relation("AssignedOfficer", fields: [assignedToId], references: [id], onDelete: Restrict)
+  breDecision    BreDecision?               @relation(fields: [breDecisionId], references: [id], onDelete: Restrict)
+  loans          Loan[]
+  documents      Document[]
+  bureauRequests BureauRequest[]
+  statusHistory  ApplicationStatusHistory[]
 
   @@index([organizationId])
   @@index([organizationId, status])
@@ -554,7 +591,7 @@ model ApplicationStatusHistory {
   remarks       String?
   createdAt     DateTime @default(now())
 
-  application   LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  application LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
 
   @@index([applicationId])
   @@map("application_status_history")
@@ -583,20 +620,21 @@ model Loan {
   loanStatus                LoanStatus        @default(ACTIVE)
   maturityDate              DateTime
   closureDate               DateTime?
+  customFields              Json              @default("{}")
   createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt
   createdBy                 String?
   updatedBy                 String?
 
-  organization              Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch                    Branch            @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  application               LoanApplication   @relation(fields: [applicationId], references: [id], onDelete: Restrict)
-  customer                  Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  product                   LoanProduct       @relation(fields: [productId], references: [id], onDelete: Restrict)
-  schedules                 LoanSchedule[]
-  payments                  Payment[]
-  collectionTasks           CollectionTask[]
-  coLendingAllocation       CoLendingAllocation?
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch              Branch               @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  application         LoanApplication      @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  customer            Customer             @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  product             LoanProduct          @relation(fields: [productId], references: [id], onDelete: Restrict)
+  schedules           LoanSchedule[]
+  payments            Payment[]
+  collectionTasks     CollectionTask[]
+  coLendingAllocation CoLendingAllocation?
 
   @@index([organizationId])
   @@index([organizationId, loanStatus])
@@ -622,7 +660,7 @@ model LoanSchedule {
   penalInterestPaisa      Int            @default(0)
   status                  ScheduleStatus @default(PENDING)
 
-  loan                    Loan           @relation(fields: [loanId], references: [id], onDelete: Restrict)
+  loan Loan @relation(fields: [loanId], references: [id], onDelete: Restrict)
 
   @@unique([loanId, installmentNumber])
   @@index([loanId])
@@ -648,8 +686,8 @@ model Payment {
   createdBy                 String?
   updatedBy                 String?
 
-  organization              Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  loan                      Loan          @relation(fields: [loanId], references: [id], onDelete: Restrict)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loan         Loan         @relation(fields: [loanId], references: [id], onDelete: Restrict)
 
   @@index([organizationId])
   @@index([loanId])
@@ -674,10 +712,10 @@ model BureauRequest {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
-  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  application     LoanApplication     @relation(fields: [applicationId], references: [id], onDelete: Restrict)
-  customer        Customer            @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  bureauResponse  BureauResponse?
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  application    LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  customer       Customer        @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  bureauResponse BureauResponse?
 
   @@index([organizationId])
   @@index([applicationId])
@@ -685,8 +723,8 @@ model BureauRequest {
 }
 
 model BureauResponse {
-  id                      String        @id @default(uuid())
-  bureauRequestId         String        @unique
+  id                      String   @id @default(uuid())
+  bureauRequestId         String   @unique
   applicationId           String
   score                   Int?
   totalActiveLoans        Int?
@@ -695,14 +733,14 @@ model BureauResponse {
   maxDpdLast24Months      Int?
   enquiriesLast3Months    Int?
   enquiriesLast6Months    Int?
-  hasWriteOff             Boolean       @default(false)
-  hasSettlement           Boolean       @default(false)
+  hasWriteOff             Boolean  @default(false)
+  hasSettlement           Boolean  @default(false)
   oldestLoanAgeMonths     Int?
-  tradelines              Json          @default("[]")
+  tradelines              Json     @default("[]")
   validUntil              DateTime
-  createdAt               DateTime      @default(now())
+  createdAt               DateTime @default(now())
 
-  bureauRequest           BureauRequest @relation(fields: [bureauRequestId], references: [id], onDelete: Restrict)
+  bureauRequest BureauRequest @relation(fields: [bureauRequestId], references: [id], onDelete: Restrict)
 
   @@index([applicationId])
   @@map("bureau_responses")
@@ -728,8 +766,8 @@ model BreRule {
   createdBy      String?
   updatedBy      String?
 
-  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  product        LoanProduct     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  product      LoanProduct  @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@index([organizationId])
   @@index([organizationId, productId, isActive])
@@ -748,8 +786,8 @@ model BreDecision {
   overriddenBy            String?
   overrideReason          String?
 
-  organization            Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  loanApplications        LoanApplication[]
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loanApplications LoanApplication[]
 
   @@index([applicationId])
   @@index([organizationId])
@@ -757,7 +795,7 @@ model BreDecision {
 }
 
 model CollectionTask {
-  id             String                @id @default(uuid())
+  id             String                 @id @default(uuid())
   organizationId String
   loanId         String
   dpdAtCreation  Int
@@ -769,12 +807,13 @@ model CollectionTask {
   ptpDate        DateTime?
   ptpAmountPaisa Int?
   remarks        String?
-  status         CollectionTaskStatus  @default(PENDING)
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
+  status         CollectionTaskStatus   @default(PENDING)
+  customFields   Json                   @default("{}")
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
 
-  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  loan           Loan                  @relation(fields: [loanId], references: [id], onDelete: Restrict)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loan         Loan         @relation(fields: [loanId], references: [id], onDelete: Restrict)
 
   @@index([organizationId])
   @@index([loanId])
@@ -783,7 +822,7 @@ model CollectionTask {
 }
 
 model DSA {
-  id                String   @id @default(uuid())
+  id                String    @id @default(uuid())
   organizationId    String
   name              String
   contactPerson     String
@@ -791,20 +830,20 @@ model DSA {
   email             String
   panNumber         String
   gstNumber         String?
-  dsaCode           String   @unique
+  dsaCode           String    @unique
   dsaType           DsaType
-  commissionPercent Decimal  @db.Decimal(5, 2)
-  products          Json     @default("[]")
-  isActive          Boolean  @default(true)
+  commissionPercent Decimal   @db.Decimal(5, 2)
+  products          Json      @default("[]")
+  isActive          Boolean   @default(true)
   empanelmentDate   DateTime
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
   createdBy         String?
   updatedBy         String?
   deletedAt         DateTime?
 
-  organization      Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  loanApplications  LoanApplication[]
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loanApplications LoanApplication[]
 
   @@index([organizationId])
   @@map("dsas")
@@ -828,8 +867,8 @@ model CoLendingPartner {
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
-  organization            Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  allocations             CoLendingAllocation[]
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  allocations  CoLendingAllocation[]
 
   @@index([organizationId])
   @@map("co_lending_partners")
@@ -847,8 +886,8 @@ model CoLendingAllocation {
   createdAt              DateTime        @default(now())
   updatedAt              DateTime        @updatedAt
 
-  loan                   Loan             @relation(fields: [loanId], references: [id], onDelete: Restrict)
-  partner                CoLendingPartner @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+  loan    Loan             @relation(fields: [loanId], references: [id], onDelete: Restrict)
+  partner CoLendingPartner @relation(fields: [partnerId], references: [id], onDelete: Restrict)
 
   @@index([partnerId])
   @@map("co_lending_allocations")
@@ -871,8 +910,8 @@ model GlEntry {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch            Branch       @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Restrict)
 
   @@index([organizationId])
   @@index([organizationId, accountCode])
@@ -900,12 +939,97 @@ model Document {
   updatedBy      String?
   deletedAt      DateTime?
 
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  application    LoanApplication? @relation(fields: [applicationId], references: [id], onDelete: Restrict)
-  customer       Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  application  LoanApplication? @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  customer     Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
 
   @@index([organizationId])
   @@index([customerId])
   @@index([applicationId])
   @@map("documents")
+}
+
+// ============================================================
+// Workflow Engine
+// ============================================================
+
+model WorkflowTemplate {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  productId      String? // null = applies to all products
+  isDefault      Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  stages         Json // Array of WorkflowStage objects
+  transitions    Json // Array of WorkflowTransition objects
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String?
+  updatedBy      String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  product      LoanProduct? @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([organizationId, productId])
+  @@map("workflow_templates")
+}
+
+// ============================================================
+// Collection Strategies, GL Accounts, Notification Logs
+// ============================================================
+
+model CollectionStrategy {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  dpdFrom        Int
+  dpdTo          Int
+  actions        Json // Array of {dayOffset, taskType, channel?, template?}
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@map("collection_strategies")
+}
+
+model GlAccount {
+  id             String   @id @default(uuid())
+  organizationId String
+  accountCode    String
+  accountName    String
+  accountType    String // ASSET, LIABILITY, INCOME, EXPENSE, EQUITY
+  parentCode     String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, accountCode])
+  @@index([organizationId])
+  @@map("gl_accounts")
+}
+
+model NotificationLog {
+  id             String    @id @default(uuid())
+  organizationId String
+  customerId     String?
+  channel        String // SMS, EMAIL, WHATSAPP
+  templateCode   String
+  recipient      String // phone or email
+  content        String?
+  status         String    @default("SENT") // SENT, DELIVERED, FAILED, READ
+  sentAt         DateTime  @default(now())
+  deliveredAt    DateTime?
+  failureReason  String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([organizationId, customerId])
+  @@map("notification_logs")
 }

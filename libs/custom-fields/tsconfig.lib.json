@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../dist/libs/custom-fields",
+    "rootDir": "src",
+    "baseUrl": "../..",
+    "paths": {
+      "@bankos/common": ["libs/common/src/index.ts"],
+      "@bankos/common/*": ["libs/common/src/*"],
+      "@bankos/database": ["libs/database/src/index.ts"],
+      "@bankos/database/*": ["libs/database/src/*"],
+      "@bankos/auth": ["libs/auth/src/index.ts"],
+      "@bankos/auth/*": ["libs/auth/src/*"],
+      "@bankos/events": ["libs/events/src/index.ts"],
+      "@bankos/events/*": ["libs/events/src/*"],
+      "@bankos/custom-fields": ["libs/custom-fields/src/index.ts"],
+      "@bankos/custom-fields/*": ["libs/custom-fields/src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
+}

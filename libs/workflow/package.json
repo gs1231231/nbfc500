@@ -1,0 +1,12 @@
+{
+  "name": "@bankos/workflow",
+  "version": "0.1.0",
+  "description": "BankOS Workflow Customization Engine — tenant-defined loan processing workflows",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.lib.json",
+    "typecheck": "tsc -p tsconfig.lib.json --noEmit"
+  }
+}
