@@ -394,3 +394,42 @@ export function calculatePrepaymentAmount(
     totalPayable: totalPayable.toNumber(),
   };
 }
+
+/**
+ * Calculate APR (Annual Percentage Rate) using Newton-Raphson IRR
+ * Includes all cashflows: disbursement, EMIs, fees
+ *
+ * @param disbursementPaisa  - Gross loan disbursement in paisa
+ * @param emiPaisa           - Monthly EMI in paisa
+ * @param tenureMonths       - Loan tenure in months
+ * @param totalFeesPaisa     - Total upfront fees deducted in paisa
+ * @returns APR in basis points (e.g. 1823 = 18.23%)
+ */
+export function calculateAPR(
+  disbursementPaisa: number,
+  emiPaisa: number,
+  tenureMonths: number,
+  totalFeesPaisa: number,
+): number {
+  // Net cashflow at t=0: disbursement - fees (what borrower actually receives)
+  const netDisbursement = disbursementPaisa - totalFeesPaisa;
+
+  // Newton-Raphson to find monthly rate where NPV = 0
+  let monthlyRate = 0.01; // initial guess 1%
+  for (let iter = 0; iter < 100; iter++) {
+    let npv = -netDisbursement;
+    let dnpv = 0;
+    for (let t = 1; t <= tenureMonths; t++) {
+      const df = Math.pow(1 + monthlyRate, -t);
+      npv += emiPaisa * df;
+      dnpv += -t * emiPaisa * df / (1 + monthlyRate);
+    }
+    const adjustment = npv / dnpv;
+    monthlyRate -= adjustment;
+    if (Math.abs(adjustment) < 1e-10) break;
+  }
+
+  // Convert to annual rate in bps
+  const annualRate = Math.pow(1 + monthlyRate, 12) - 1;
+  return Math.round(annualRate * 10000); // return in bps
+}

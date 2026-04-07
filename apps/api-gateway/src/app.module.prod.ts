@@ -50,6 +50,9 @@ import { OtsModule } from '../../lms-service/src/ots/ots.module';
 import { WriteoffModule } from '../../lms-service/src/writeoff/writeoff.module';
 import { LoanModule } from '../../lms-service/src/loan/loan.module';
 import { GlModule } from '../../lms-service/src/gl/gl.module';
+import { NachModule } from '../../lms-service/src/nach/nach.module';
+import { LoanViewerModule } from '../../lms-service/src/loan-viewer/loan-viewer.module';
+import { RestructureModule } from '../../lms-service/src/restructure/restructure.module';
 
 // ── BRE (Business Rule Engine) ────────────────────────────────────────────
 import { BreModule } from '../../bre-service/src/bre.module';
@@ -59,6 +62,7 @@ import { MlModule } from '../../bre-service/src/ml-scoring/ml.module';
 import { CollectionModule } from '../../collection-service/src/collection/collection.module';
 import { RepossessionModule } from '../../collection-service/src/repossession/repossession.module';
 import { LegalModule } from '../../collection-service/src/legal/legal.module';
+import { LogsModule } from '../../collection-service/src/logs/logs.module';
 
 // ── Bureau (Credit Bureau) ─────────────────────────────────────────────────
 import { BureauModule } from '../../bureau-service/src/bureau.module';
@@ -114,6 +118,9 @@ import { CoLendingModule } from '../../colending-service/src/colending/colending
     WriteoffModule,
     LoanModule,
     GlModule,
+    NachModule,
+    LoanViewerModule,
+    RestructureModule,
 
     // ── BRE
     BreModule,
@@ -123,6 +130,7 @@ import { CoLendingModule } from '../../colending-service/src/colending/colending
     CollectionModule,
     RepossessionModule,
     LegalModule,
+    LogsModule,
 
     // ── Bureau
     BureauModule,

@@ -301,6 +301,22 @@ model Organization {
   collectionStrategies   CollectionStrategy[]
   glAccounts             GlAccount[]
   notificationLogs       NotificationLog[]
+  systemConfig           SystemConfig?
+  productFeeConfigs      ProductFeeConfig[]
+  interestRateCards      InterestRateCard[]
+  verificationRequests   VerificationRequest[]
+  cams                   CreditAppraisalMemo[]
+  sanctionLetters        SanctionLetter[]
+  disbursementRequests   DisbursementRequest[]
+  nachMandates           NachMandate[]
+  bounceRegisters        BounceRegister[]
+  loanChargeEntries      LoanChargeEntry[]
+  soaEntries             SOAEntry[]
+  documentTemplates      DocumentTemplate[]
+  generatedDocuments     GeneratedDocument[]
+  collectionCallLogs     CollectionCallLog[]
+  fieldVisitLogs         FieldVisitLog[]
+  loanRestructures       LoanRestructure[]
 
   @@index([code])
   @@map("organizations")
@@ -497,6 +513,9 @@ model Customer {
   loans            Loan[]
   documents        Document[]
   bureauRequests   BureauRequest[]
+  addresses        CustomerAddress[]
+  employments      CustomerEmployment[]
+  bankAccounts     CustomerBankAccount[]
 
   @@index([organizationId])
   @@index([organizationId, phone])
@@ -532,6 +551,8 @@ model LoanProduct {
   loans             Loan[]
   breRules          BreRule[]
   workflowTemplates WorkflowTemplate[]
+  feeConfigs        ProductFeeConfig[]
+  rateCards         InterestRateCard[]
 
   @@index([organizationId])
   @@map("loan_products")
@@ -563,17 +584,21 @@ model LoanApplication {
   updatedBy                 String?
   deletedAt                 DateTime?
 
-  organization   Organization               @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch         Branch                     @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  customer       Customer                   @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  product        LoanProduct                @relation(fields: [productId], references: [id], onDelete: Restrict)
-  dsa            DSA?                       @relation(fields: [dsaId], references: [id], onDelete: Restrict)
-  assignedTo     User?                      @relation("AssignedOfficer", fields: [assignedToId], references: [id], onDelete: Restrict)
-  breDecision    BreDecision?               @relation(fields: [breDecisionId], references: [id], onDelete: Restrict)
-  loans          Loan[]
-  documents      Document[]
-  bureauRequests BureauRequest[]
-  statusHistory  ApplicationStatusHistory[]
+  organization         Organization               @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch               Branch                     @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  customer             Customer                   @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  product              LoanProduct                @relation(fields: [productId], references: [id], onDelete: Restrict)
+  dsa                  DSA?                       @relation(fields: [dsaId], references: [id], onDelete: Restrict)
+  assignedTo           User?                      @relation("AssignedOfficer", fields: [assignedToId], references: [id], onDelete: Restrict)
+  breDecision          BreDecision?               @relation(fields: [breDecisionId], references: [id], onDelete: Restrict)
+  loans                Loan[]
+  documents            Document[]
+  bureauRequests       BureauRequest[]
+  statusHistory        ApplicationStatusHistory[]
+  verificationRequests VerificationRequest[]
+  cam                  CreditAppraisalMemo?
+  sanctionLetter       SanctionLetter?
+  disbursementRequests DisbursementRequest[]
 
   @@index([organizationId])
   @@index([organizationId, status])
@@ -635,6 +660,13 @@ model Loan {
   payments            Payment[]
   collectionTasks     CollectionTask[]
   coLendingAllocation CoLendingAllocation?
+  nachMandates        NachMandate[]
+  bounces             BounceRegister[]
+  charges             LoanChargeEntry[]
+  soaEntries          SOAEntry[]
+  callLogs            CollectionCallLog[]
+  visitLogs           FieldVisitLog[]
+  restructures        LoanRestructure[]
 
   @@index([organizationId])
   @@index([organizationId, loanStatus])
@@ -1032,4 +1064,432 @@ model NotificationLog {
   @@index([organizationId])
   @@index([organizationId, customerId])
   @@map("notification_logs")
+}
+
+// ============================================================
+// V4 Operational Models
+// ============================================================
+
+model SystemConfig {
+  id             String   @id @default(uuid())
+  organizationId String   @unique
+  logo           String?
+  letterhead     String?
+  gstin          String?
+  pan            String?
+  cin            String?
+  registeredAddress String?
+  signatoryName  String?
+  signatoryDesignation String?
+  smsSenderId    String?
+  fiscalYearStart Int     @default(4) // April
+  defaultInterestCalcMethod String @default("REDUCING_MONTHLY")
+  settings       Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  @@map("system_configs")
+}
+
+model ProductFeeConfig {
+  id             String   @id @default(uuid())
+  organizationId String
+  productId      String
+  feeType        String   // PROCESSING, LOGIN, LEGAL, VALUATION, STAMP_DUTY, INSURANCE, BOUNCE, PENAL, PREPAYMENT, FORECLOSURE
+  calculationType String  // PERCENTAGE, FLAT, SLAB
+  value          Decimal  @db.Decimal(10,4)
+  gstApplicable  Boolean  @default(true)
+  deductFromDisbursement Boolean @default(false)
+  collectUpfront Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  product        LoanProduct  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  @@index([organizationId, productId])
+  @@map("product_fee_configs")
+}
+
+model InterestRateCard {
+  id             String   @id @default(uuid())
+  organizationId String
+  productId      String
+  riskGrade      String   // A, B, C, D, E
+  cibilMin       Int?
+  cibilMax       Int?
+  rateBps        Int
+  rateType       String   @default("FIXED") // FIXED, FLOATING
+  benchmark      String?  // REPO, MCLR
+  spreadBps      Int?
+  effectiveFrom  DateTime
+  effectiveTo    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  product        LoanProduct  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  @@index([organizationId, productId])
+  @@map("interest_rate_cards")
+}
+
+model CustomerAddress {
+  id             String   @id @default(uuid())
+  customerId     String
+  addressType    String   // CURRENT, PERMANENT, OFFICE
+  residenceType  String?  // OWNED, RENTED, COMPANY, FAMILY
+  addressLine1   String
+  addressLine2   String?
+  city           String
+  state          String
+  pincode        String
+  residenceSince DateTime?
+  isVerified     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  customer       Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  @@index([customerId])
+  @@map("customer_addresses")
+}
+
+model CustomerEmployment {
+  id             String   @id @default(uuid())
+  customerId     String
+  companyName    String
+  designation    String?
+  industry       String?
+  joiningDate    DateTime?
+  grossIncomePaisa Int?
+  netIncomePaisa Int?
+  annualIncomePaisa Int?
+  incomeProofType String?  // SALARY_SLIP, ITR, BANK_STATEMENT, CA_CERT
+  isCurrent      Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  customer       Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  @@index([customerId])
+  @@map("customer_employments")
+}
+
+model CustomerBankAccount {
+  id             String   @id @default(uuid())
+  customerId     String
+  bankName       String
+  accountNumber  String   // encrypted
+  ifsc           String
+  accountType    String   @default("SAVINGS") // SAVINGS, CURRENT, OD, CC
+  isPrimary      Boolean  @default(false)
+  pennyDropVerified Boolean @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  customer       Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  @@index([customerId])
+  @@map("customer_bank_accounts")
+}
+
+model VerificationRequest {
+  id               String   @id @default(uuid())
+  organizationId   String
+  applicationId    String
+  customerId       String
+  verificationType String   // TVR, FI, TECHNICAL_VALUATION, LEGAL_VERIFICATION, RCU, PD, REFERENCE_CHECK
+  status           String   @default("PENDING") // PENDING, ASSIGNED, IN_PROGRESS, COMPLETED, POSITIVE, NEGATIVE, INCONCLUSIVE
+  assignedToId     String?
+  vendorName       String?
+  report           Json?
+  photos           Json?    // array of S3 keys
+  geoLocation      Json?    // {lat, lng}
+  slaDeadline      DateTime?
+  completedAt      DateTime?
+  remarks          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization     Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  application      LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@index([applicationId])
+  @@map("verification_requests")
+}
+
+model CreditAppraisalMemo {
+  id               String   @id @default(uuid())
+  organizationId   String
+  applicationId    String   @unique
+  camNumber        String   @unique
+  customerProfile  Json     @default("{}")
+  incomeAssessment Json     @default("{}")
+  bankingAnalysis  Json     @default("{}")
+  bureauAnalysis   Json     @default("{}")
+  obligationMapping Json    @default("{}")
+  collateralAssessment Json @default("{}")
+  riskAssessment   Json     @default("{}")
+  deviations       Json     @default("[]")
+  camStatus        String   @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, REJECTED
+  approvedBy       String?
+  approvedAt       DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization     Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  application      LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@map("credit_appraisal_memos")
+}
+
+model SanctionLetter {
+  id                  String   @id @default(uuid())
+  organizationId      String
+  applicationId       String   @unique
+  sanctionLetterNumber String  @unique
+  sanctionDate        DateTime
+  validUntilDate      DateTime
+  terms               Json     @default("{}")
+  mitcContent         Json     @default("{}") // APR, totalPayable, totalInterest, prepaymentCharges, penalCharges
+  kfsContent          Json     @default("{}") // RBI mandated KFS
+  conditionsPrecedent Json     @default("[]")
+  conditionsSubsequent Json    @default("[]")
+  securityDetails     Json?
+  generatedPdfUrl     String?
+  eSigned             Boolean  @default(false)
+  eSignTransactionId  String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  organization        Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  application         LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@map("sanction_letters")
+}
+
+model DisbursementRequest {
+  id               String   @id @default(uuid())
+  organizationId   String
+  applicationId    String
+  loanId           String?
+  requestedById    String
+  approvedById     String?  // must differ from requestedById (maker-checker)
+  status           String   @default("PENDING_APPROVAL") // PENDING_APPROVAL, APPROVED, REJECTED, PROCESSING, COMPLETED, FAILED
+  disbursementType String   @default("FULL") // FULL, PARTIAL_TRANCHE, TOP_UP, DEALER_PAYMENT
+  trancheNumber    Int      @default(1)
+  grossAmountPaisa Int
+  deductions       Json     @default("{}") // {processingFee, stampDuty, insurance}
+  netAmountPaisa   Int
+  payeeType        String   @default("BORROWER") // BORROWER, DEALER, BUILDER, SELLER, INSURANCE
+  payeeAccountNumber String? // encrypted
+  payeeIfsc        String?
+  payeeName        String?
+  utrNumber        String?
+  remarks          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization     Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  application      LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@index([applicationId])
+  @@map("disbursement_requests")
+}
+
+model NachMandate {
+  id               String   @id @default(uuid())
+  organizationId   String
+  loanId           String
+  customerId       String
+  mandateType      String   @default("NACH") // NACH, E_NACH, UPI_AUTOPAY
+  umrn             String?  @unique
+  maxAmountPaisa   Int
+  frequency        String   @default("MONTHLY")
+  startDate        DateTime
+  endDate          DateTime
+  bankAccountId    String?
+  status           String   @default("INITIATED") // INITIATED, AUTHENTICATED, ACTIVE, SUSPENDED, CANCELLED
+  consecutiveBouncesCount Int @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loan             Loan         @relation(fields: [loanId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@index([loanId])
+  @@map("nach_mandates")
+}
+
+model BounceRegister {
+  id               String   @id @default(uuid())
+  organizationId   String
+  loanId           String
+  bounceType       String   // NACH, CHEQUE, UPI
+  bounceDate       DateTime
+  amountPaisa      Int
+  returnReason     String   // INSUFFICIENT_FUNDS, ACCOUNT_CLOSED, MANDATE_CANCELLED, etc.
+  penalChargesPaisa Int     @default(0)
+  gstPaisa         Int      @default(0)
+  waivedPaisa      Int      @default(0)
+  rePresentationDate DateTime?
+  rePresentationStatus String? // PENDING, CLEARED, BOUNCED_AGAIN
+  createdAt        DateTime @default(now())
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loan             Loan         @relation(fields: [loanId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@index([loanId])
+  @@map("bounce_register")
+}
+
+model LoanChargeEntry {
+  id             String   @id @default(uuid())
+  organizationId String
+  loanId         String
+  chargeType     String   // BOUNCE, PENAL, LATE_FEE, PREPAYMENT_PENALTY, FORECLOSURE, INSURANCE_RENEWAL, LEGAL, OTHER
+  amountPaisa    Int
+  gstPaisa       Int      @default(0)
+  dueDate        DateTime
+  paidPaisa      Int      @default(0)
+  waivedPaisa    Int      @default(0)
+  status         String   @default("DUE") // DUE, PAID, PARTIALLY_PAID, WAIVED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loan           Loan         @relation(fields: [loanId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@index([loanId])
+  @@map("loan_charge_entries")
+}
+
+model SOAEntry {
+  id                    String   @id @default(uuid())
+  organizationId        String
+  loanId                String
+  entryDate             DateTime
+  transactionType       String   // DISBURSEMENT, EMI_DEMAND, PRINCIPAL_RECEIPT, INTEREST_RECEIPT, PENAL_RECEIPT, BOUNCE_CHARGE, FEE_LEVIED, INTEREST_ACCRUAL, PROVISION, WRITE_OFF, WAIVER, PREPAYMENT, FORECLOSURE, REVERSAL
+  description           String
+  debitPaisa            Int      @default(0)
+  creditPaisa           Int      @default(0)
+  principalBalancePaisa Int      @default(0)
+  interestBalancePaisa  Int      @default(0)
+  chargesBalancePaisa   Int      @default(0)
+  totalBalancePaisa     Int      @default(0)
+  referenceId           String?
+  createdAt             DateTime @default(now())
+
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loan                  Loan         @relation(fields: [loanId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@index([loanId, entryDate])
+  @@map("soa_entries")
+}
+
+model DocumentTemplate {
+  id             String   @id @default(uuid())
+  organizationId String
+  templateCode   String   // SANCTION_LETTER, LOAN_AGREEMENT, DEMAND_NOTICE, NOC, INTEREST_CERTIFICATE, SOA, KFS
+  name           String
+  htmlContent    String   // Handlebars template
+  version        Int      @default(1)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  @@unique([organizationId, templateCode])
+  @@index([organizationId])
+  @@map("document_templates")
+}
+
+model GeneratedDocument {
+  id             String   @id @default(uuid())
+  organizationId String
+  templateId     String?
+  entityType     String   // LOAN, APPLICATION, CUSTOMER
+  entityId       String
+  documentName   String
+  pdfUrl         String?
+  variables      Json     @default("{}")
+  sentToCustomer Boolean  @default(false)
+  sentAt         DateTime?
+  createdAt      DateTime @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@index([entityType, entityId])
+  @@map("generated_documents")
+}
+
+model CollectionCallLog {
+  id             String   @id @default(uuid())
+  organizationId String
+  loanId         String
+  taskId         String?
+  callerUserId   String
+  calledNumber   String
+  duration       Int?     // seconds
+  personSpokenTo String?
+  disposition    String   // CONNECTED, NOT_REACHABLE, BUSY, SWITCHED_OFF, WRONG_NUMBER, PTP, REFUSED, CALLBACK
+  ptpDate        DateTime?
+  ptpAmountPaisa Int?
+  followUpDate   DateTime?
+  remarks        String?
+  callRecordingUrl String?
+  createdAt      DateTime @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loan           Loan         @relation(fields: [loanId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@index([loanId])
+  @@map("collection_call_logs")
+}
+
+model FieldVisitLog {
+  id               String   @id @default(uuid())
+  organizationId   String
+  loanId           String
+  taskId           String?
+  agentUserId      String
+  checkInTime      DateTime
+  checkInLocation  Json     // {lat, lng}
+  checkOutTime     DateTime?
+  checkOutLocation Json?
+  addressVisited   String
+  personMet        String?
+  visitOutcome     String   // PAYMENT_COLLECTED, PTP, NOT_AVAILABLE, DOOR_LOCKED, SHIFTED, REFUSED
+  amountCollectedPaisa Int  @default(0)
+  photos           Json     @default("[]") // array of S3 keys
+  customerSignature String? // S3 key
+  remarks          String?
+  createdAt        DateTime @default(now())
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loan             Loan         @relation(fields: [loanId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@index([loanId])
+  @@map("field_visit_logs")
+}
+
+model LoanRestructure {
+  id                    String   @id @default(uuid())
+  organizationId        String
+  loanId                String
+  restructureType       String   // EMI_REDUCTION, TENURE_EXTENSION, MORATORIUM, RATE_REVISION, COMBINATION
+  oldTerms              Json     // snapshot of old terms
+  newTerms              Json     // new terms
+  moratoriumMonths      Int?
+  interestCapitalizedPaisa Int?
+  previousScheduleSnapshot Json? // full old schedule
+  approvedBy            String?
+  approvedAt            DateTime?
+  effectiveDate         DateTime
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  loan                  Loan         @relation(fields: [loanId], references: [id], onDelete: Restrict)
+  @@index([organizationId])
+  @@index([loanId])
+  @@map("loan_restructures")
 }

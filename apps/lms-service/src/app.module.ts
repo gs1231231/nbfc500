@@ -9,6 +9,10 @@ import { OtsModule } from './ots/ots.module';
 import { WriteoffModule } from './writeoff/writeoff.module';
 import { LoanModule } from './loan/loan.module';
 import { GlModule } from './gl/gl.module';
+import { NachModule } from './nach/nach.module';
+import { LoanViewerModule } from './loan-viewer/loan-viewer.module';
+import { RestructureModule } from './restructure/restructure.module';
+import { SoaModule } from './soa/soa.module';
 
 @Module({
   imports: [
@@ -24,6 +28,10 @@ import { GlModule } from './gl/gl.module';
     WriteoffModule,
     LoanModule,
     GlModule,
+    NachModule,
+    LoanViewerModule,
+    RestructureModule,
+    SoaModule,
   ],
 })
 export class AppModule {}

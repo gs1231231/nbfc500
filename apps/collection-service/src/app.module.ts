@@ -5,6 +5,7 @@ import { DatabaseModule } from '@bankos/database';
 import { CollectionModule } from './collection/collection.module';
 import { RepossessionModule } from './repossession/repossession.module';
 import { LegalModule } from './legal/legal.module';
+import { LogsModule } from './logs/logs.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { LegalModule } from './legal/legal.module';
     CollectionModule,
     RepossessionModule,
     LegalModule,
+    LogsModule,
   ],
 })
 export class AppModule {}

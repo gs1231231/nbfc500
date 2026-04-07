@@ -11,6 +11,8 @@ import { CommissionModule } from './commission/commission.module';
 import { LeadModule } from './lead/lead.module';
 import { AaModule } from './account-aggregator/aa.module';
 import { DocaiModule } from './document-ai/docai.module';
+import { VerificationModule } from './verification/verification.module';
+import { CamModule } from './cam/cam.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { DocaiModule } from './document-ai/docai.module';
     LeadModule,
     AaModule,
     DocaiModule,
+    VerificationModule,
+    CamModule,
   ],
 })
 export class AppModule {}
