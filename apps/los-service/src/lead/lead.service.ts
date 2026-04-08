@@ -75,6 +75,10 @@ export class LeadService {
     application: Record<string, unknown>;
     isExisting: boolean;
   }> {
+    this.logger.log(
+      `verifyOtpAndCreateLead — orgId: ${orgId} | txnId: ${dto.txnId} | productId: ${dto.productId} | branchId: ${dto.branchId}`,
+    );
+
     // Step A — verify OTP via adapter
     const verifyResponse = await this.aadhaarAdapter.verifyOtp(
       dto.txnId,
@@ -83,10 +87,13 @@ export class LeadService {
     );
 
     if (!verifyResponse.success) {
+      this.logger.warn(`OTP verification failed — txnId: ${dto.txnId} | reason: ${verifyResponse.message}`);
       throw new UnauthorizedException(
         verifyResponse.message || 'Invalid OTP',
       );
     }
+
+    this.logger.log(`OTP verified — txnId: ${dto.txnId}`);
 
     // Step B — fetch eKYC data
     const ekycResponse = await this.aadhaarAdapter.getEkycData(
@@ -95,12 +102,14 @@ export class LeadService {
     );
 
     if (!ekycResponse.success || !ekycResponse.ekycData) {
+      this.logger.warn(`eKYC data fetch failed — txnId: ${dto.txnId} | reason: ${ekycResponse.message}`);
       throw new BadRequestException(
         ekycResponse.message || 'Failed to fetch eKYC data',
       );
     }
 
     const ekyc = ekycResponse.ekycData;
+    this.logger.log(`eKYC data fetched — name: ${ekyc.name}`);
 
     // Step C — validate product and branch belong to org
     const [product, branch] = await Promise.all([
@@ -113,15 +122,23 @@ export class LeadService {
     ]);
 
     if (!product) {
+      this.logger.warn(
+        `Product not found or inactive — productId: ${dto.productId} | orgId: ${orgId}`,
+      );
       throw new BadRequestException(
         `Loan product ${dto.productId} not found or inactive for this organisation`,
       );
     }
     if (!branch) {
+      this.logger.warn(
+        `Branch not found or inactive — branchId: ${dto.branchId} | orgId: ${orgId}`,
+      );
       throw new BadRequestException(
         `Branch ${dto.branchId} not found or inactive for this organisation`,
       );
     }
+
+    this.logger.log(`Product: ${product.name} | Branch: ${branch.name}`);
 
     // Step D — dedupe check: does a customer with this Aadhaar (encrypted) already exist?
     const encryptedAadhaar = encrypt(dto.aadhaarNumber);

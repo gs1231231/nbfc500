@@ -99,11 +99,19 @@ export class MockAadhaarEkycAdapter implements IAadhaarEkycAdapter {
   }
 
   async verifyOtp(txnId: string, otp: string, aadhaarNumber: string): Promise<AadhaarVerifyOtpResponse> {
+    // For testing convenience: OTP '123456' bypasses txnId lookup.
+    // This allows callers to skip the send-otp step in integration tests or when
+    // the in-memory store has been reset (e.g. service restart between requests).
+    if (otp === '123456') {
+      console.log(`[MockAadhaarEkyc] Magic OTP accepted for txnId: ${txnId} | aadhaar: ${aadhaarNumber.slice(-4).padStart(12, '*')}`);
+      return { success: true, txnId, message: 'OTP verified successfully' };
+    }
+
     const stored = this.otpStore.get(txnId);
     if (!stored || stored.aadhaarNumber !== aadhaarNumber) {
       return { success: false, txnId, message: 'Invalid transaction ID' };
     }
-    if (stored.otp !== otp && otp !== '123456') {
+    if (stored.otp !== otp) {
       return { success: false, txnId, message: 'Invalid OTP' };
     }
     console.log(`[MockAadhaarEkyc] OTP verified for txnId: ${txnId}`);

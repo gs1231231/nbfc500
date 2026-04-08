@@ -10,8 +10,10 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
@@ -19,6 +21,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { JwtAuthGuard, OrgGuard, OrgId, CurrentUser, AuthenticatedUser } from '@bankos/auth';
 import { ApplicationService } from './application.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
@@ -31,25 +34,17 @@ import { TransitionApplicationDto } from './dto/transition-application.dto';
  * All monetary amounts in responses are in INR (rupees) with 2 decimal places.
  * All monetary amounts in request bodies must be in paisa (1 INR = 100 paisa).
  *
- * organizationId is expected to come from the JWT-authenticated context.
- * Until auth middleware is wired, a temporary header X-Organization-Id is used.
+ * organizationId is extracted from the JWT token via the @OrgId() decorator.
+ * The JwtAuthGuard + OrgGuard pair ensures every request is authenticated and
+ * carries a valid orgId — callers cannot spoof a different org by passing a
+ * query parameter.
  */
 @ApiTags('Loan Applications')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, OrgGuard)
 @Controller('api/v1/applications')
 export class ApplicationController {
   constructor(private readonly applicationService: ApplicationService) {}
-
-  /**
-   * Resolves the organization ID from the request context.
-   * TODO: Replace with JWT guard extracting orgId from the token claims.
-   */
-  private resolveOrgId(headers: Record<string, string | string[]>): string {
-    const orgId = headers['x-organization-id'];
-    if (!orgId || Array.isArray(orgId)) {
-      throw new Error('X-Organization-Id header is required');
-    }
-    return orgId;
-  }
 
   // ============================================================
   // POST /api/v1/applications
@@ -88,7 +83,7 @@ export class ApplicationController {
   })
   async create(
     @Body() dto: CreateApplicationDto,
-    @Query('orgId') orgId: string,
+    @OrgId() orgId: string,
   ) {
     return this.applicationService.create(orgId, dto);
   }
@@ -107,7 +102,6 @@ export class ApplicationController {
       'createdAt range, and requested amount range. ' +
       'Includes customer name and product name in the response.',
   })
-  @ApiQuery({ name: 'orgId', required: true, description: 'Organization ID' })
   @ApiQuery({ name: 'status', required: false, description: 'Filter by application status' })
   @ApiQuery({ name: 'productId', required: false, description: 'Filter by product ID' })
   @ApiQuery({ name: 'branchId', required: false, description: 'Filter by branch ID' })
@@ -124,7 +118,7 @@ export class ApplicationController {
     description: 'Paginated list of applications',
   })
   async findAll(
-    @Query('orgId') orgId: string,
+    @OrgId() orgId: string,
     @Query() filters: FilterApplicationDto,
   ) {
     return this.applicationService.findAll(orgId, filters);
@@ -144,7 +138,6 @@ export class ApplicationController {
       'documents, bureau requests, and associated loans.',
   })
   @ApiParam({ name: 'id', description: 'Loan application UUID', type: 'string' })
-  @ApiQuery({ name: 'orgId', required: true, description: 'Organization ID' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Full application detail',
@@ -155,7 +148,7 @@ export class ApplicationController {
   })
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
-    @Query('orgId') orgId: string,
+    @OrgId() orgId: string,
   ) {
     return this.applicationService.findOne(orgId, id);
   }
@@ -174,7 +167,6 @@ export class ApplicationController {
       'Returns the full updated application.',
   })
   @ApiParam({ name: 'id', description: 'Loan application UUID', type: 'string' })
-  @ApiQuery({ name: 'orgId', required: true, description: 'Organization ID' })
   @ApiBody({ type: UpdateApplicationDto })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -190,7 +182,7 @@ export class ApplicationController {
   })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Query('orgId') orgId: string,
+    @OrgId() orgId: string,
     @Body() dto: UpdateApplicationDto,
   ) {
     return this.applicationService.update(orgId, id, dto);
@@ -209,7 +201,6 @@ export class ApplicationController {
       'Only allowed when application is in an editable stage: LEAD, APPLICATION, DOCUMENT_COLLECTION.',
   })
   @ApiParam({ name: 'id', description: 'Loan application UUID', type: 'string' })
-  @ApiQuery({ name: 'orgId', required: true, description: 'Organization ID' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Application deleted successfully',
@@ -224,7 +215,7 @@ export class ApplicationController {
   })
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
-    @Query('orgId') orgId: string,
+    @OrgId() orgId: string,
   ) {
     return this.applicationService.remove(orgId, id);
   }
@@ -251,8 +242,7 @@ export class ApplicationController {
       '- CANCELLED allowed from any stage except DISBURSED.',
   })
   @ApiParam({ name: 'id', description: 'Loan application UUID', type: 'string' })
-  @ApiQuery({ name: 'orgId', required: true, description: 'Organization ID' })
-  @ApiQuery({ name: 'userId', required: false, description: 'Acting user ID (for role checks)' })
+  @ApiQuery({ name: 'userId', required: false, description: 'Acting user ID (for role checks) — defaults to JWT userId' })
   @ApiBody({ type: TransitionApplicationDto })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -268,11 +258,14 @@ export class ApplicationController {
   })
   async transition(
     @Param('id', ParseUUIDPipe) id: string,
-    @Query('orgId') orgId: string,
-    @Query('userId') userId: string | undefined,
+    @OrgId() orgId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('userId') userIdOverride: string | undefined,
     @Body() dto: TransitionApplicationDto,
   ) {
-    return this.applicationService.transition(orgId, id, dto, userId);
+    // Prefer the JWT userId; allow explicit override only for backward-compat
+    const actingUserId = userIdOverride ?? user.userId;
+    return this.applicationService.transition(orgId, id, dto, actingUserId);
   }
 
   // ============================================================
@@ -289,8 +282,7 @@ export class ApplicationController {
       'Uses the workflow engine when a template exists; falls back to static transitions.',
   })
   @ApiParam({ name: 'id', description: 'Loan application UUID', type: 'string' })
-  @ApiQuery({ name: 'orgId', required: true, description: 'Organization ID' })
-  @ApiQuery({ name: 'userId', required: true, description: 'Acting user ID (for role checks)' })
+  @ApiQuery({ name: 'userId', required: false, description: 'Acting user ID — defaults to JWT userId' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'List of available transitions',
@@ -301,9 +293,11 @@ export class ApplicationController {
   })
   async availableTransitions(
     @Param('id', ParseUUIDPipe) id: string,
-    @Query('orgId') orgId: string,
-    @Query('userId') userId: string,
+    @OrgId() orgId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('userId') userIdOverride: string | undefined,
   ) {
-    return this.applicationService.getAvailableTransitions(orgId, id, userId);
+    const actingUserId = userIdOverride ?? user.userId;
+    return this.applicationService.getAvailableTransitions(orgId, id, actingUserId);
   }
 }

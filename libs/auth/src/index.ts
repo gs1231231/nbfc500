@@ -6,3 +6,4 @@ export { Roles, ROLES_KEY } from './roles.decorator';
 export { CurrentUser } from './current-user.decorator';
 export { OrgGuard } from './org.guard';
 export { AuditInterceptor } from './audit.interceptor';
+export { OrgId } from './org-id.decorator';
