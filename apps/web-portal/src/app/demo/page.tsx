@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -41,6 +41,18 @@ const demoAccounts = [
 ];
 
 export default function DemoPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
+      </div>
+    }>
+      <DemoPageInner />
+    </Suspense>
+  );
+}
+
+function DemoPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loadingId, setLoadingId] = useState<string | null>(null);
