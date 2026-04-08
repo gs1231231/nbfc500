@@ -131,7 +131,7 @@ export default function ApplicationsPage() {
   ]);
   const appStatuses = new Set(applications.map((a) => a.status));
   const visibleColumns = KANBAN_COLUMNS.filter(
-    (col) => primaryStatuses.has(col.status) || appStatuses.has(col.status)
+    (col) => primaryStatuses.has(col.status as string) || appStatuses.has(col.status as string)
   );
 
   if (loading) {
