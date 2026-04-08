@@ -95,6 +95,12 @@ services:
       # Organisation / Tenancy
       ORG_ID: ${ORG_ID:-bankos}
 
+      # Encryption
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-nbfcsathi-default-encryption-key}
+
+      # Bureau
+      BUREAU_ADAPTER: ${BUREAU_ADAPTER:-mock}
+
       # External APIs (override in .env.prod)
       EQUIFAX_API_KEY: ${EQUIFAX_API_KEY:-}
       EQUIFAX_API_URL: ${EQUIFAX_API_URL:-}
