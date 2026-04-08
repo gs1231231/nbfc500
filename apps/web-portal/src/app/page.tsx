@@ -87,47 +87,76 @@ const steps = [
 const pricingTiers = [
   {
     name: "Starter",
-    price: "₹25,000",
+    price: "₹9,999",
     period: "/month",
-    desc: "Perfect for new NBFCs just getting started.",
+    desc: "For new NBFCs with AUM up to ₹25 Cr.",
     features: [
-      "Up to 1,000 active loans",
-      "5 user seats",
-      "Basic modules (Origination + LMS)",
+      "AUM up to ₹25 Crore",
+      "Up to 10 users",
+      "LOS + LMS + Collections",
+      "1 Credit Bureau integration",
+      "Basic BRE (up to 20 rules)",
       "Standard reports",
-      "Email support",
+      "Email + chat support",
+      "₹2/loan/month after 2,000 loans",
     ],
     highlight: false,
-    cta: "Start Trial",
+    cta: "Start Free Trial",
   },
   {
     name: "Growth",
-    price: "₹75,000",
+    price: "₹24,999",
     period: "/month",
-    desc: "For growing NBFCs scaling their operations.",
+    desc: "For growing NBFCs with AUM up to ₹200 Cr.",
     features: [
-      "Up to 10,000 active loans",
-      "25 user seats",
+      "AUM up to ₹200 Crore",
+      "Up to 50 users",
       "All modules included",
+      "All Bureau integrations",
+      "Advanced BRE + custom workflows",
+      "Co-lending module",
       "Full API access",
-      "Priority support",
-      "Bureau integrations",
+      "Priority support (4hr SLA)",
+      "₹1.50/loan/month after 10,000 loans",
+      "₹499/additional user/month",
     ],
     highlight: true,
+    cta: "Start Free Trial",
+  },
+  {
+    name: "Scale",
+    price: "₹49,999",
+    period: "/month",
+    desc: "For large NBFCs with AUM up to ₹1,000 Cr.",
+    features: [
+      "AUM up to ₹1,000 Crore",
+      "Up to 200 users",
+      "Everything in Growth",
+      "ML credit scoring",
+      "Account Aggregator",
+      "Document AI (OCR)",
+      "Dedicated success manager",
+      "Phone support (2hr SLA)",
+      "₹1/loan/month after 50,000 loans",
+      "₹399/additional user/month",
+    ],
+    highlight: false,
     cta: "Start Trial",
   },
   {
     name: "Enterprise",
     price: "Custom",
     period: " pricing",
-    desc: "For large NBFCs and MFIs with custom needs.",
+    desc: "For NBFCs with AUM above ₹1,000 Cr.",
     features: [
-      "Unlimited loans & users",
-      "Dedicated success manager",
-      "Custom integrations",
+      "Unlimited AUM",
+      "Unlimited users",
       "On-premise or private cloud",
-      "SLA-backed uptime",
-      "Co-lending module",
+      "Custom integrations",
+      "White-label option",
+      "SLA-backed 99.95% uptime",
+      "Dedicated infra + DBA",
+      "Volume-based loan pricing",
     ],
     highlight: false,
     cta: "Contact Us",
@@ -331,11 +360,11 @@ export default function LandingPage() {
               Simple, transparent pricing
             </h2>
             <p className="text-lg text-gray-500">
-              Start free. Scale as you grow. No hidden fees.
+              AUM-based + user-based pricing. Pay only for what you use. 1/3rd the cost of legacy platforms.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
             {pricingTiers.map((tier) => (
               <div
                 key={tier.name}
