@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Shield,
   Play,
@@ -42,8 +42,35 @@ const demoAccounts = [
 
 export default function DemoPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [autoLogging, setAutoLogging] = useState(false);
+
+  // Auto-login when ?auto=nbfc or ?auto=mfi is present
+  useEffect(() => {
+    const autoParam = searchParams.get("auto");
+    if (autoParam) {
+      const account = demoAccounts.find((a) => a.id === autoParam);
+      if (account) {
+        setAutoLogging(true);
+        handleLaunchDemo(account);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (autoLogging) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
+          <p className="text-white text-lg font-semibold">Launching demo...</p>
+          <p className="text-slate-400 text-sm">Setting up your demo environment</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleLaunchDemo = async (account: (typeof demoAccounts)[0]) => {
     setLoadingId(account.id);
