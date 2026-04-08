@@ -129,7 +129,7 @@ export default function ApplicationsPage() {
     "LEAD", "APPLICATION", "DOCUMENT_COLLECTION", "BUREAU_CHECK",
     "UNDERWRITING", "APPROVED", "SANCTIONED", "DISBURSEMENT_PENDING", "DISBURSED", "REJECTED",
   ]);
-  const appStatuses = new Set(applications.map((a) => a.status));
+  const appStatuses = new Set<string>(applications.map((a) => a.status));
   const visibleColumns = KANBAN_COLUMNS.filter(
     (col) => primaryStatuses.has(col.status as string) || appStatuses.has(col.status as string)
   );
