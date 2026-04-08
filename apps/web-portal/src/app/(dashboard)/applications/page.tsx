@@ -2,22 +2,31 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Clock, User, DollarSign, Building } from "lucide-react";
+import { Clock, User, DollarSign, Building, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { mockApplications } from "@/lib/mock-data";
+import { applicationsApi } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
-import type { Application, ApplicationStatus } from "@/lib/api";
+import type { Application } from "@/lib/api";
 
-const KANBAN_COLUMNS: { status: ApplicationStatus; label: string; color: string; bg: string }[] = [
-  { status: "SUBMITTED", label: "Submitted", color: "text-blue-700", bg: "bg-blue-50" },
+// Kanban statuses aligned with real API status values
+const KANBAN_COLUMNS: { status: string; label: string; color: string; bg: string }[] = [
+  { status: "LEAD", label: "Lead", color: "text-slate-700", bg: "bg-slate-50" },
+  { status: "APPLICATION", label: "Application", color: "text-blue-700", bg: "bg-blue-50" },
+  { status: "DOCUMENT_COLLECTION", label: "Docs Collection", color: "text-indigo-700", bg: "bg-indigo-50" },
   { status: "BUREAU_CHECK", label: "Bureau Check", color: "text-purple-700", bg: "bg-purple-50" },
-  { status: "BRE_CHECK", label: "BRE Check", color: "text-indigo-700", bg: "bg-indigo-50" },
-  { status: "UNDER_REVIEW", label: "Under Review", color: "text-amber-700", bg: "bg-amber-50" },
-  { status: "CREDIT_REVIEW", label: "Credit Review", color: "text-orange-700", bg: "bg-orange-50" },
+  { status: "UNDERWRITING", label: "Underwriting", color: "text-amber-700", bg: "bg-amber-50" },
+  { status: "APPROVED", label: "Approved", color: "text-teal-700", bg: "bg-teal-50" },
   { status: "SANCTIONED", label: "Sanctioned", color: "text-green-700", bg: "bg-green-50" },
-  { status: "DOCUMENTATION", label: "Documentation", color: "text-teal-700", bg: "bg-teal-50" },
+  { status: "DISBURSEMENT_PENDING", label: "Disbursal Pending", color: "text-orange-700", bg: "bg-orange-50" },
   { status: "DISBURSED", label: "Disbursed", color: "text-emerald-700", bg: "bg-emerald-50" },
   { status: "REJECTED", label: "Rejected", color: "text-red-700", bg: "bg-red-50" },
+  // Legacy statuses kept so mock-data still renders correctly
+  { status: "SUBMITTED", label: "Submitted", color: "text-blue-700", bg: "bg-blue-50" },
+  { status: "UNDER_REVIEW", label: "Under Review", color: "text-amber-700", bg: "bg-amber-50" },
+  { status: "CREDIT_REVIEW", label: "Credit Review", color: "text-orange-700", bg: "bg-orange-50" },
+  { status: "DOCUMENTATION", label: "Documentation", color: "text-teal-700", bg: "bg-teal-50" },
+  { status: "BRE_CHECK", label: "BRE Check", color: "text-indigo-700", bg: "bg-indigo-50" },
 ];
 
 const PRODUCT_COLORS: Record<string, string> = {
@@ -89,9 +98,24 @@ function KanbanCard({ app }: { app: Application }) {
 export default function ApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [filterProduct, setFilterProduct] = useState("ALL");
+  const [loading, setLoading] = useState(true);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
-    setApplications(mockApplications);
+    async function fetchApplications() {
+      try {
+        const result = await applicationsApi.list();
+        setApplications(result.data || []);
+        setIsDemo(false);
+      } catch {
+        // Fallback to mock data when API is unavailable
+        setApplications(mockApplications);
+        setIsDemo(true);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchApplications();
   }, []);
 
   const filteredApps = filterProduct === "ALL"
@@ -100,12 +124,38 @@ export default function ApplicationsPage() {
 
   const products = ["ALL", ...Array.from(new Set(applications.map((a) => a.product)))];
 
+  // Only show columns that have at least one application OR are primary real-data columns
+  const primaryStatuses = new Set([
+    "LEAD", "APPLICATION", "DOCUMENT_COLLECTION", "BUREAU_CHECK",
+    "UNDERWRITING", "APPROVED", "SANCTIONED", "DISBURSEMENT_PENDING", "DISBURSED", "REJECTED",
+  ]);
+  const appStatuses = new Set(applications.map((a) => a.status));
+  const visibleColumns = KANBAN_COLUMNS.filter(
+    (col) => primaryStatuses.has(col.status) || appStatuses.has(col.status)
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <span className="ml-3 text-gray-500">Loading applications...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Application Pipeline</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900">Application Pipeline</h1>
+            {isDemo && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium border border-amber-200">
+                Demo data
+              </span>
+            )}
+          </div>
           <p className="text-sm text-gray-500 mt-1">
             {applications.length} total applications
           </p>
@@ -132,7 +182,7 @@ export default function ApplicationsPage() {
       {/* Kanban Board */}
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-4 min-w-max">
-          {KANBAN_COLUMNS.map((col) => {
+          {visibleColumns.map((col) => {
             const colApps = filteredApps.filter((a) => a.status === col.status);
             return (
               <div key={col.status} className="w-64 flex-shrink-0">

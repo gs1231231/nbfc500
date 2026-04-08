@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { mockLoans } from "@/lib/mock-data";
+import { loansApi } from "@/lib/api";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Loan } from "@/lib/api";
 
@@ -25,9 +26,24 @@ export default function LoansPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [filterProduct, setFilterProduct] = useState("ALL");
+  const [loading, setLoading] = useState(true);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
-    setLoans(mockLoans);
+    async function fetchLoans() {
+      try {
+        const result = await loansApi.list();
+        setLoans(result.data || []);
+        setIsDemo(false);
+      } catch {
+        // Fallback to mock data when API is unavailable
+        setLoans(mockLoans);
+        setIsDemo(true);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchLoans();
   }, []);
 
   const filtered = loans.filter((l) => {
@@ -41,10 +57,26 @@ export default function LoansPage() {
 
   const products = ["ALL", ...Array.from(new Set(loans.map((l) => l.product)))];
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <span className="ml-3 text-gray-500">Loading loans...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Loans</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900">Loans</h1>
+          {isDemo && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium border border-amber-200">
+              Demo data
+            </span>
+          )}
+        </div>
         <p className="text-sm text-gray-500 mt-1">{filtered.length} loans</p>
       </div>
 

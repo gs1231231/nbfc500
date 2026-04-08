@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Search, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { mockCustomers } from "@/lib/mock-data";
+import { customersApi } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import type { Customer } from "@/lib/api";
 
@@ -24,9 +25,24 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
-    setCustomers(mockCustomers);
+    async function fetchCustomers() {
+      try {
+        const result = await customersApi.list();
+        setCustomers(result.data || []);
+        setIsDemo(false);
+      } catch {
+        // Fallback to mock data when API is unavailable
+        setCustomers(mockCustomers);
+        setIsDemo(true);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchCustomers();
   }, []);
 
   const filtered = customers.filter(
@@ -39,10 +55,26 @@ export default function CustomersPage() {
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <span className="ml-3 text-gray-500">Loading customers...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
+          {isDemo && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium border border-amber-200">
+              Demo data
+            </span>
+          )}
+        </div>
         <p className="text-sm text-gray-500 mt-1">{filtered.length} customers found</p>
       </div>
 

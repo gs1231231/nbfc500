@@ -11,13 +11,15 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { PhoneCall, AlertTriangle, TrendingUp, CheckSquare } from "lucide-react";
+import { PhoneCall, AlertTriangle, TrendingUp, CheckSquare, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { mockCollectionDashboard, mockCollectionTasks } from "@/lib/mock-data";
+import { api, collectionsApi } from "@/lib/api";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import type { CollectionDashboard, CollectionTask } from "@/lib/api";
 
 const TASK_STATUS_COLORS = {
   PENDING: "warning",
@@ -53,14 +55,71 @@ const CustomTooltip = ({
 };
 
 export default function CollectionsPage() {
-  const [dashboard] = useState(mockCollectionDashboard);
-  const [tasks] = useState(mockCollectionTasks);
+  const [dashboard, setDashboard] = useState<CollectionDashboard>(mockCollectionDashboard);
+  const [tasks, setTasks] = useState<CollectionTask[]>(mockCollectionTasks);
   const [activeTab, setActiveTab] = useState<"count" | "amount">("count");
+  const [loading, setLoading] = useState(true);
+  const [isDemo, setIsDemo] = useState(false);
+
+  useEffect(() => {
+    async function fetchCollections() {
+      let usedMock = false;
+
+      // Fetch NPA summary (DPD buckets)
+      try {
+        const npa = await api.get<{ dpdBuckets?: CollectionDashboard["dpdBuckets"] }>(
+          "/dashboard/npa-summary"
+        );
+        if (npa.dpdBuckets?.length) {
+          setDashboard((prev) => ({ ...prev, dpdBuckets: npa.dpdBuckets! }));
+        }
+      } catch {
+        usedMock = true;
+      }
+
+      // Fetch collections dashboard (totals, efficiency, today tasks)
+      try {
+        const col = await collectionsApi.dashboard();
+        setDashboard(col);
+      } catch {
+        usedMock = true;
+      }
+
+      // Fetch collection tasks
+      try {
+        const taskResult = await collectionsApi.tasks();
+        setTasks(taskResult.data || []);
+      } catch {
+        usedMock = true;
+      }
+
+      setIsDemo(usedMock);
+      setLoading(false);
+    }
+
+    fetchCollections();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <span className="ml-3 text-gray-500">Loading collections...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Collections Dashboard</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900">Collections Dashboard</h1>
+          {isDemo && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium border border-amber-200">
+              Demo data
+            </span>
+          )}
+        </div>
         <p className="text-sm text-gray-500 mt-1">Monitor overdue loans and collection activities</p>
       </div>
 
@@ -160,7 +219,7 @@ export default function CollectionsPage() {
                   radius={[4, 4, 0, 0]}
                 >
                   {dashboard.dpdBuckets.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={BAR_COLORS[index]} />
+                    <Cell key={`cell-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} />
                   ))}
                 </Bar>
               </BarChart>
@@ -173,7 +232,7 @@ export default function CollectionsPage() {
               <div key={bucket.bucket} className="text-center">
                 <div
                   className="h-2 rounded-full mb-1"
-                  style={{ backgroundColor: BAR_COLORS[idx] }}
+                  style={{ backgroundColor: BAR_COLORS[idx % BAR_COLORS.length] }}
                 />
                 <p className="text-xs font-medium text-gray-700">{bucket.bucket}</p>
                 <p className="text-xs text-gray-500">{bucket.count} loans</p>
@@ -204,44 +263,52 @@ export default function CollectionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tasks.map((task) => (
-                <TableRow key={task.id}>
-                  <TableCell className="font-mono text-xs">{task.loanNumber}</TableCell>
-                  <TableCell className="font-medium text-gray-900">{task.customerName}</TableCell>
-                  <TableCell>{task.mobile}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`font-bold ${
-                        task.dpd > 90
-                          ? "text-red-600"
-                          : task.dpd > 30
-                          ? "text-amber-600"
-                          : "text-orange-500"
-                      }`}
-                    >
-                      {task.dpd}
-                    </span>
-                  </TableCell>
-                  <TableCell className="font-medium text-red-600">
-                    {formatCurrency(task.overdueAmount)}
-                  </TableCell>
-                  <TableCell className="text-gray-600 text-sm">
-                    {task.assignedAgent || "Unassigned"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={TASK_STATUS_COLORS[task.status]}>{task.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-500">
-                    {formatDate(task.scheduledDate)}
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="outline" size="sm">
-                      <PhoneCall className="h-3.5 w-3.5 mr-1" />
-                      Call
-                    </Button>
+              {tasks.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-gray-400 py-12">
+                    No collection tasks for today
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                tasks.map((task) => (
+                  <TableRow key={task.id}>
+                    <TableCell className="font-mono text-xs">{task.loanNumber}</TableCell>
+                    <TableCell className="font-medium text-gray-900">{task.customerName}</TableCell>
+                    <TableCell>{task.mobile}</TableCell>
+                    <TableCell>
+                      <span
+                        className={`font-bold ${
+                          task.dpd > 90
+                            ? "text-red-600"
+                            : task.dpd > 30
+                            ? "text-amber-600"
+                            : "text-orange-500"
+                        }`}
+                      >
+                        {task.dpd}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-medium text-red-600">
+                      {formatCurrency(task.overdueAmount)}
+                    </TableCell>
+                    <TableCell className="text-gray-600 text-sm">
+                      {task.assignedAgent || "Unassigned"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={TASK_STATUS_COLORS[task.status]}>{task.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-500">
+                      {formatDate(task.scheduledDate)}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm">
+                        <PhoneCall className="h-3.5 w-3.5 mr-1" />
+                        Call
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
