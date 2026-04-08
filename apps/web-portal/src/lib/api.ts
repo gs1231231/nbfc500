@@ -202,17 +202,19 @@ export interface Application {
 }
 
 export type ApplicationStatus =
-  | "DRAFT"
-  | "SUBMITTED"
-  | "UNDER_REVIEW"
+  | "LEAD"
+  | "APPLICATION"
+  | "DOCUMENT_COLLECTION"
   | "BUREAU_CHECK"
-  | "BRE_CHECK"
-  | "CREDIT_REVIEW"
+  | "UNDERWRITING"
+  | "APPROVED"
   | "SANCTIONED"
-  | "DOCUMENTATION"
+  | "DISBURSEMENT_PENDING"
   | "DISBURSED"
   | "REJECTED"
-  | "WITHDRAWN";
+  | "CANCELLED"
+  | "EXPIRED"
+  | string;
 
 export interface Customer {
   id: string;
