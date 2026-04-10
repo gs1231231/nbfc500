@@ -5,7 +5,23 @@
       "Bash(git remote:*)",
       "Bash(pnpm --version)",
       "Bash(pnpm install:*)",
-      "Bash(npx nest:*)"
+      "Bash(npx nest:*)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\" https://nbfcsathi.com)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\" http://3.6.36.222)",
+      "Bash(curl -s http://3.6.36.222/api/v1/health)",
+      "Bash(curl -s -X POST http://3.6.36.222/api/v1/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"rajesh.kumar@growthfinance.in\",\"password\":\"Test@1234\"}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('OK -', d['user']['firstName'], d['user']['lastName'], '- Roles:', d['user']['roles']\\)\")",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\" http://3.6.36.222/demo?auto=nbfc)",
+      "Bash(ssh -i /Users/chetan/.ssh/bankos-key.pem ec2-user@3.6.36.222 'sudo docker exec bankos-postgres psql -U bankos -d bankos -t -c \"SELECT count\\(*\\) FROM information_schema.tables WHERE table_schema='\\\\''public'\\\\'' AND table_type='\\\\''BASE TABLE'\\\\'';\"')",
+      "Bash(npx jest:*)",
+      "Bash(curl -sL https://nbfcsathi.com/api/v1/health)",
+      "Bash(curl -sL -X POST https://nbfcsathi.com/api/v1/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"rajesh.kumar@growthfinance.in\",\"password\":\"Test@1234\"}')",
+      "Bash(npx tsc:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(pnpm seed:*)",
+      "Bash(npx tsx:*)",
+      "Bash(git add:*)"
     ]
   }
 }

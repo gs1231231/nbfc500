@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 import * as bcrypt from 'bcryptjs';
 import Decimal from 'decimal.js';
@@ -1355,6 +1355,768 @@ async function main() {
   }
   console.log(`  ${glAccountDefs.length} GL accounts created`);
 
+  // ── 15. Seed Schemes for Growth Finance ──────────────────────────────────
+  console.log('Creating sample schemes...');
+
+  // Find Personal Loan product for schemes
+  const schemePlProduct = await prisma.loanProduct.findFirst({
+    where: { organizationId: org.id, productType: 'PERSONAL_LOAN' },
+  });
+
+  const adminUser = await prisma.user.findFirst({
+    where: { organizationId: org.id },
+    orderBy: { createdAt: 'asc' },
+    select: { id: true },
+  });
+  const seedUserId = adminUser?.id ?? 'system';
+
+  // Find any DSA IDs for corporate tie-up scheme
+  const corporateDsas = await prisma.dSA.findMany({
+    where: { organizationId: org.id },
+    take: 2,
+    select: { id: true },
+  });
+  const corporateDsaIds = corporateDsas.map((d) => d.id);
+
+  const schemeDefs = [
+    {
+      schemeCode: 'DIWALI-2026',
+      schemeName: 'Diwali Dhamaka 2026',
+      description:
+        'Festive season offer — flat 2% rate discount and zero processing fee on personal loans.',
+      schemeType: 'FESTIVE',
+      productId: schemePlProduct?.id ?? null,
+      validFrom: new Date('2026-10-15T00:00:00.000Z'),
+      validTo: new Date('2026-11-15T23:59:59.000Z'),
+      isActive: true,
+      interestRateDiscountBps: 200,
+      processingFeeWaiver: true,
+      maxDisbursementCount: 100,
+      maxDisbursementAmountPaisa: BigInt(50_00_00_000), // 5 Cr in paisa
+    },
+    {
+      schemeCode: 'SAL-SPECIAL-2026',
+      schemeName: 'Salaried Special',
+      description:
+        'Exclusive offer for salaried professionals with CIBIL 700+: 1.5% rate discount and 50% off processing fee.',
+      schemeType: 'PROMOTIONAL',
+      productId: schemePlProduct?.id ?? null,
+      validFrom: new Date('2026-01-01T00:00:00.000Z'),
+      validTo: new Date('2026-12-31T23:59:59.000Z'),
+      isActive: true,
+      minCibilScore: 700,
+      eligibleEmploymentTypes: ['SALARIED'],
+      interestRateDiscountBps: 150,
+      processingFeeDiscountPercent: new Decimal(50),
+    },
+    {
+      schemeCode: 'BT-BONANZA-2026',
+      schemeName: 'BT Bonanza',
+      description:
+        'Balance Transfer scheme with 1% rate discount. Max DPD 30 on source loan.',
+      schemeType: 'BALANCE_TRANSFER',
+      productId: null,
+      validFrom: new Date('2026-01-01T00:00:00.000Z'),
+      validTo: new Date('2026-12-31T23:59:59.000Z'),
+      isActive: true,
+      interestRateDiscountBps: 100,
+      balanceTransferMaxDays: 30,
+    },
+    {
+      schemeCode: 'CORP-HDFC-2026',
+      schemeName: 'Corporate Tie-Up HDFC',
+      description:
+        'Exclusive fixed-rate offer for HDFC Bank employees via corporate tie-up DSA. Zero processing fee.',
+      schemeType: 'CORPORATE_TIE_UP',
+      productId: schemePlProduct?.id ?? null,
+      validFrom: new Date('2026-01-01T00:00:00.000Z'),
+      validTo: new Date('2026-12-31T23:59:59.000Z'),
+      isActive: true,
+      fixedInterestRateBps: 1100,
+      processingFeeWaiver: true,
+      eligibleDsas: corporateDsaIds.length > 0 ? corporateDsaIds : null,
+      eligibleEmploymentTypes: ['SALARIED'],
+    },
+  ];
+
+  for (const s of schemeDefs) {
+    await prisma.scheme.upsert({
+      where: {
+        organizationId_schemeCode: {
+          organizationId: org.id,
+          schemeCode: s.schemeCode,
+        },
+      },
+      update: {},
+      create: {
+        organizationId: org.id,
+        schemeCode: s.schemeCode,
+        schemeName: s.schemeName,
+        description: s.description,
+        schemeType: s.schemeType,
+        productId: s.productId ?? null,
+        validFrom: s.validFrom,
+        validTo: s.validTo,
+        isActive: s.isActive,
+        interestRateDiscountBps: (s as any).interestRateDiscountBps ?? null,
+        fixedInterestRateBps: (s as any).fixedInterestRateBps ?? null,
+        processingFeeWaiver: (s as any).processingFeeWaiver ?? false,
+        processingFeeDiscountPercent: (s as any).processingFeeDiscountPercent?.toString() ?? null,
+        balanceTransferMaxDays: (s as any).balanceTransferMaxDays ?? null,
+        maxDisbursementCount: (s as any).maxDisbursementCount ?? null,
+        maxDisbursementAmountPaisa: (s as any).maxDisbursementAmountPaisa ?? null,
+        eligibleEmploymentTypes: (s as any).eligibleEmploymentTypes ?? undefined,
+        eligibleDsas: (s as any).eligibleDsas ?? undefined,
+        minCibilScore: (s as any).minCibilScore ?? null,
+        createdBy: seedUserId,
+      },
+    });
+  }
+  console.log(`  ${schemeDefs.length} sample schemes created`);
+
+  // ─── VAS: Fee Templates ────────────────────────────────────────────────────
+  console.log('\nCreating VAS fee templates...');
+
+  const vfProduct = products['VF'];
+
+  const feeTemplateDefs = [
+    // 1. Processing Fee — 2% of loan amount, min ₹2,000, max ₹25,000, negotiable 50%
+    {
+      templateName: 'Processing Fee',
+      feeCode: 'PROCESSING_FEE',
+      feeCategory: 'ORIGINATION',
+      description: 'One-time processing fee for loan origination',
+      calculationType: 'PERCENTAGE',
+      percentageValue: new Decimal('2.00'),
+      percentageBase: 'LOAN_AMOUNT',
+      minCapPaisa: 200000,    // ₹2,000
+      maxCapPaisa: 2500000,   // ₹25,000
+      gstApplicable: true,
+      gstPercent: new Decimal('18.00'),
+      collectAt: 'DISBURSAL',
+      deductFromDisbursement: true,
+      isNegotiable: true,
+      maxDiscountPercent: new Decimal('50.00'),
+      showInSanctionLetter: true,
+      showInKFS: true,
+      displayOrder: 1,
+      triggerEvent: 'DISBURSAL',
+    },
+    // 2. Login Fee — ₹500 flat, collect upfront, non-refundable
+    {
+      templateName: 'Login Fee',
+      feeCode: 'LOGIN_FEE',
+      feeCategory: 'ORIGINATION',
+      description: 'Non-refundable application processing fee collected upfront',
+      calculationType: 'FLAT',
+      flatAmountPaisa: 50000,  // ₹500
+      gstApplicable: true,
+      gstPercent: new Decimal('18.00'),
+      collectAt: 'UPFRONT',
+      deductFromDisbursement: false,
+      isRefundable: false,
+      isNegotiable: false,
+      showInSanctionLetter: true,
+      showInKFS: true,
+      displayOrder: 2,
+      triggerEvent: 'DISBURSAL',
+    },
+    // 3. Documentation Charge — ₹1,000 flat, deduct from disbursement
+    {
+      templateName: 'Documentation Charge',
+      feeCode: 'DOCUMENTATION_CHARGE',
+      feeCategory: 'ORIGINATION',
+      description: 'Charge for preparing loan documentation',
+      calculationType: 'FLAT',
+      flatAmountPaisa: 100000,  // ₹1,000
+      gstApplicable: true,
+      gstPercent: new Decimal('18.00'),
+      collectAt: 'DISBURSAL',
+      deductFromDisbursement: true,
+      isNegotiable: false,
+      showInSanctionLetter: true,
+      showInKFS: true,
+      displayOrder: 3,
+      triggerEvent: 'DISBURSAL',
+    },
+    // 4. CIBIL Charge — ₹50 flat, no GST
+    {
+      templateName: 'CIBIL Charge',
+      feeCode: 'CIBIL_CHARGE',
+      feeCategory: 'REGULATORY',
+      description: 'Bureau pull charge per enquiry',
+      calculationType: 'FLAT',
+      flatAmountPaisa: 5000,   // ₹50
+      gstApplicable: false,
+      gstPercent: new Decimal('0.00'),
+      collectAt: 'UPFRONT',
+      deductFromDisbursement: false,
+      isNegotiable: false,
+      showInSanctionLetter: false,
+      showInKFS: true,
+      displayOrder: 4,
+      triggerEvent: 'DISBURSAL',
+    },
+    // 5. Stamp Duty — SLAB: up to 5L ₹100, up to 20L ₹200, above ₹500
+    {
+      templateName: 'Stamp Duty',
+      feeCode: 'STAMP_DUTY',
+      feeCategory: 'REGULATORY',
+      description: 'Stamp duty on loan agreement (slab-based)',
+      calculationType: 'SLAB',
+      slabs: [
+        { upToPaisa: 50000000, flatPaisa: 10000 },   // up to ₹5L → ₹100
+        { upToPaisa: 200000000, flatPaisa: 20000 },   // up to ₹20L → ₹200
+        { upToPaisa: null, flatPaisa: 50000 },         // above ₹20L → ₹500
+      ],
+      gstApplicable: false,
+      gstPercent: new Decimal('0.00'),
+      collectAt: 'DISBURSAL',
+      deductFromDisbursement: true,
+      isNegotiable: false,
+      showInSanctionLetter: true,
+      showInKFS: true,
+      displayOrder: 5,
+      triggerEvent: 'DISBURSAL',
+    },
+    // 6. File Charge — 0.5% of loan, only for amounts > ₹5L, vehicle finance only
+    {
+      templateName: 'File Charge',
+      feeCode: 'FILE_CHARGE',
+      feeCategory: 'ORIGINATION',
+      description: 'File management charge for vehicle loans above ₹5L',
+      calculationType: 'PERCENTAGE',
+      percentageValue: new Decimal('0.50'),
+      percentageBase: 'LOAN_AMOUNT',
+      minAmountPaisa: 50000001,  // above ₹5L
+      productIds: vfProduct ? [vfProduct.id] : null,
+      gstApplicable: true,
+      gstPercent: new Decimal('18.00'),
+      collectAt: 'DISBURSAL',
+      deductFromDisbursement: true,
+      isNegotiable: false,
+      showInSanctionLetter: true,
+      showInKFS: true,
+      displayOrder: 6,
+      triggerEvent: 'DISBURSAL',
+    },
+    // 7. NACH Registration — ₹300 flat + GST
+    {
+      templateName: 'NACH Registration',
+      feeCode: 'NACH_CHARGE',
+      feeCategory: 'ORIGINATION',
+      description: 'NACH mandate registration fee',
+      calculationType: 'FLAT',
+      flatAmountPaisa: 30000,  // ₹300
+      gstApplicable: true,
+      gstPercent: new Decimal('18.00'),
+      collectAt: 'DISBURSAL',
+      deductFromDisbursement: false,
+      isNegotiable: false,
+      showInSanctionLetter: true,
+      showInKFS: true,
+      displayOrder: 7,
+      triggerEvent: 'DISBURSAL',
+    },
+    // 8. Insurance Premium — 0.8% of loan amount, vehicle finance
+    {
+      templateName: 'Insurance Premium',
+      feeCode: 'INSURANCE_PREMIUM',
+      feeCategory: 'ORIGINATION',
+      description: 'Comprehensive insurance premium for vehicle loan',
+      calculationType: 'PERCENTAGE',
+      percentageValue: new Decimal('0.80'),
+      percentageBase: 'LOAN_AMOUNT',
+      productIds: vfProduct ? [vfProduct.id] : null,
+      gstApplicable: true,
+      gstPercent: new Decimal('18.00'),
+      collectAt: 'DISBURSAL',
+      deductFromDisbursement: false,
+      isNegotiable: false,
+      showInSanctionLetter: true,
+      showInKFS: true,
+      displayOrder: 8,
+      triggerEvent: 'DISBURSAL',
+    },
+    // 9. Bounce Charge — ₹500 flat + GST, trigger=BOUNCE, servicing
+    {
+      templateName: 'Bounce Charge',
+      feeCode: 'BOUNCE_CHARGE',
+      feeCategory: 'PENAL',
+      description: 'Charge levied on EMI bounce / mandate rejection',
+      calculationType: 'FLAT',
+      flatAmountPaisa: 50000,  // ₹500
+      gstApplicable: true,
+      gstPercent: new Decimal('18.00'),
+      collectAt: 'ON_EVENT',
+      deductFromDisbursement: false,
+      isNegotiable: false,
+      showInSanctionLetter: false,
+      showInKFS: true,
+      displayOrder: 9,
+      triggerEvent: 'BOUNCE',
+    },
+    // 10. Penal Interest — 2% per month on overdue amount, trigger=MONTHLY
+    {
+      templateName: 'Penal Interest',
+      feeCode: 'PENAL_INTEREST',
+      feeCategory: 'PENAL',
+      description: 'Penal interest charged at 2% per month on overdue amount',
+      calculationType: 'PERCENTAGE',
+      percentageValue: new Decimal('2.00'),
+      percentageBase: 'OVERDUE_AMOUNT',
+      gstApplicable: true,
+      gstPercent: new Decimal('18.00'),
+      collectAt: 'MONTHLY',
+      deductFromDisbursement: false,
+      isNegotiable: false,
+      showInSanctionLetter: false,
+      showInKFS: true,
+      displayOrder: 10,
+      triggerEvent: 'MONTHLY',
+    },
+    // 11. Prepayment Penalty — 4% of outstanding principal
+    {
+      templateName: 'Prepayment Penalty',
+      feeCode: 'PREPAYMENT_PENALTY',
+      feeCategory: 'CLOSURE',
+      description: 'Penalty for early repayment within lock-in period (12 months)',
+      calculationType: 'PERCENTAGE',
+      percentageValue: new Decimal('4.00'),
+      percentageBase: 'OUTSTANDING_PRINCIPAL',
+      maxTenureMonths: 12,  // applies only if ≤12 months tenure paid
+      gstApplicable: true,
+      gstPercent: new Decimal('18.00'),
+      collectAt: 'ON_EVENT',
+      deductFromDisbursement: false,
+      isNegotiable: false,
+      showInSanctionLetter: true,
+      showInKFS: true,
+      displayOrder: 11,
+      triggerEvent: 'PREPAYMENT',
+    },
+    // 12. Foreclosure Charge — SLAB: within 12m 5%, 12-24m 3%, above 24m 2% of outstanding
+    {
+      templateName: 'Foreclosure Charge',
+      feeCode: 'FORECLOSURE_CHARGE',
+      feeCategory: 'CLOSURE',
+      description: 'Foreclosure charge on outstanding principal (slab by tenor)',
+      calculationType: 'SLAB',
+      slabs: [
+        { upToPaisa: 50000000, percent: 5.0 },    // outstanding ≤ ₹5L (proxy for short tenor)
+        { upToPaisa: 200000000, percent: 3.0 },   // outstanding ≤ ₹20L
+        { upToPaisa: null, percent: 2.0 },          // above ₹20L
+      ],
+      gstApplicable: true,
+      gstPercent: new Decimal('18.00'),
+      collectAt: 'ON_EVENT',
+      deductFromDisbursement: false,
+      isNegotiable: true,
+      maxDiscountPercent: new Decimal('25.00'),
+      showInSanctionLetter: true,
+      showInKFS: true,
+      displayOrder: 12,
+      triggerEvent: 'FORECLOSURE',
+    },
+  ];
+
+  let feeTemplateCount = 0;
+  for (const ft of feeTemplateDefs) {
+    await prisma.feeTemplate.upsert({
+      where: {
+        // Use a compound unique that doesn't exist, so always try create
+        // We use id-based approach via findFirst + create/skip
+        id: `00000000-0000-0000-0000-${String(feeTemplateCount).padStart(12, '0')}`,
+      },
+      update: {},
+      create: {
+        organizationId: org.id,
+        templateName: ft.templateName,
+        feeCode: ft.feeCode,
+        feeCategory: ft.feeCategory,
+        description: ft.description ?? null,
+        isActive: true,
+        productIds: (ft as any).productIds ?? null,
+        minAmountPaisa: (ft as any).minAmountPaisa ?? null,
+        maxAmountPaisa: (ft as any).maxAmountPaisa ?? null,
+        minRateBps: null,
+        maxRateBps: null,
+        minTenureMonths: null,
+        maxTenureMonths: (ft as any).maxTenureMonths ?? null,
+        customerTypes: Prisma.JsonNull,
+        employmentTypes: Prisma.JsonNull,
+        sourceTypes: Prisma.JsonNull,
+        schemeIds: Prisma.JsonNull,
+        loanStatuses: Prisma.JsonNull,
+        triggerEvent: ft.triggerEvent ?? null,
+        calculationType: ft.calculationType,
+        flatAmountPaisa: (ft as any).flatAmountPaisa ?? null,
+        percentageValue: (ft as any).percentageValue ?? null,
+        percentageBase: (ft as any).percentageBase ?? null,
+        minCapPaisa: (ft as any).minCapPaisa ?? null,
+        maxCapPaisa: (ft as any).maxCapPaisa ?? null,
+        slabs: (ft as any).slabs ?? null,
+        perUnitAmountPaisa: null,
+        unitType: null,
+        formula: null,
+        gstApplicable: ft.gstApplicable,
+        gstPercent: ft.gstPercent,
+        cessPercent: null,
+        collectAt: ft.collectAt,
+        deductFromDisbursement: ft.deductFromDisbursement,
+        isRefundable: (ft as any).isRefundable ?? false,
+        refundCondition: null,
+        displayOrder: ft.displayOrder,
+        showInSanctionLetter: ft.showInSanctionLetter,
+        showInKFS: ft.showInKFS,
+        isNegotiable: ft.isNegotiable,
+        maxDiscountPercent: (ft as any).maxDiscountPercent ?? null,
+        createdBy: seedUserId,
+      },
+    }).catch(async () => {
+      // If upsert fails due to id mismatch, use create with findFirst guard
+      const existing = await prisma.feeTemplate.findFirst({
+        where: { organizationId: org.id, feeCode: ft.feeCode, templateName: ft.templateName },
+      });
+      if (!existing) {
+        await prisma.feeTemplate.create({
+          data: {
+            organizationId: org.id,
+            templateName: ft.templateName,
+            feeCode: ft.feeCode,
+            feeCategory: ft.feeCategory,
+            description: ft.description ?? null,
+            isActive: true,
+            productIds: (ft as any).productIds ?? null,
+            minAmountPaisa: (ft as any).minAmountPaisa ?? null,
+            maxAmountPaisa: (ft as any).maxAmountPaisa ?? null,
+            minRateBps: null,
+            maxRateBps: null,
+            minTenureMonths: null,
+            maxTenureMonths: (ft as any).maxTenureMonths ?? null,
+            customerTypes: Prisma.JsonNull,
+            employmentTypes: Prisma.JsonNull,
+            sourceTypes: Prisma.JsonNull,
+            schemeIds: Prisma.JsonNull,
+            loanStatuses: Prisma.JsonNull,
+            triggerEvent: ft.triggerEvent ?? null,
+            calculationType: ft.calculationType,
+            flatAmountPaisa: (ft as any).flatAmountPaisa ?? null,
+            percentageValue: (ft as any).percentageValue ?? null,
+            percentageBase: (ft as any).percentageBase ?? null,
+            minCapPaisa: (ft as any).minCapPaisa ?? null,
+            maxCapPaisa: (ft as any).maxCapPaisa ?? null,
+            slabs: (ft as any).slabs ?? null,
+            perUnitAmountPaisa: null,
+            unitType: null,
+            formula: null,
+            gstApplicable: ft.gstApplicable,
+            gstPercent: ft.gstPercent,
+            cessPercent: null,
+            collectAt: ft.collectAt,
+            deductFromDisbursement: ft.deductFromDisbursement,
+            isRefundable: (ft as any).isRefundable ?? false,
+            refundCondition: null,
+            displayOrder: ft.displayOrder,
+            showInSanctionLetter: ft.showInSanctionLetter,
+            showInKFS: ft.showInKFS,
+            isNegotiable: ft.isNegotiable,
+            maxDiscountPercent: (ft as any).maxDiscountPercent ?? null,
+            createdBy: seedUserId,
+          },
+        });
+        feeTemplateCount++;
+      }
+    });
+    feeTemplateCount++;
+  }
+  console.log(`  ${feeTemplateDefs.length} fee templates created`);
+
+  // ── 17. Customer Segments ─────────────────────────────────────────────────
+  console.log('\nCreating customer segments...');
+
+  // Fetch scheme IDs seeded above for mapping
+  const schemeByCode = async (code: string) => {
+    const s = await prisma.scheme.findFirst({ where: { organizationId: org.id, schemeCode: code } });
+    return s?.id ?? null;
+  };
+
+  const [salSpecialId, btBonanzaId, diwalId, corpHdfcId] = await Promise.all([
+    schemeByCode('SAL-SPECIAL-2026'),
+    schemeByCode('BT-BONANZA-2026'),
+    schemeByCode('DIWALI-2026'),
+    schemeByCode('CORP-HDFC-2026'),
+  ]);
+
+  const segmentDefs = [
+    {
+      segmentCode: 'PREMIUM-SALARIED',
+      segmentName: 'Premium Salaried',
+      description: 'High-income salaried employees with excellent credit score (750+).',
+      segmentType: 'INCOME',
+      priority: 100,
+      rules: [
+        { field: 'customer.employmentType', operator: 'EQ', value: 'SALARIED' },
+        { field: 'customer.monthlyIncomePaisa', operator: 'GTE', value: 10000000 },
+        { field: 'bureau.score', operator: 'GTE', value: 750 },
+      ],
+      mappedSchemeIds: [salSpecialId, corpHdfcId].filter(Boolean),
+      offerPriority: 'BEST_RATE',
+      maxOffersToShow: 3,
+    },
+    {
+      segmentCode: 'YOUNG-PROFESSIONAL',
+      segmentName: 'Young Professional',
+      description: 'Salaried or self-employed professionals aged 22–35 with good credit.',
+      segmentType: 'DEMOGRAPHIC',
+      priority: 90,
+      rules: [
+        { field: 'customer.age', operator: 'BETWEEN', value: 22, value2: 35 },
+        { field: 'customer.employmentType', operator: 'IN', value: ['SALARIED', 'SELF_EMPLOYED_PROFESSIONAL'] },
+        { field: 'bureau.score', operator: 'GTE', value: 700 },
+      ],
+      mappedSchemeIds: [salSpecialId].filter(Boolean),
+      offerPriority: 'BEST_RATE',
+      maxOffersToShow: 2,
+    },
+    {
+      segmentCode: 'HIGH-NET-WORTH',
+      segmentName: 'High Net Worth',
+      description: 'Customers with monthly income above ₹2.5 lakh — all schemes eligible.',
+      segmentType: 'INCOME',
+      priority: 95,
+      rules: [
+        { field: 'customer.monthlyIncomePaisa', operator: 'GTE', value: 25000000 },
+      ],
+      mappedSchemeIds: [salSpecialId, btBonanzaId, diwalId, corpHdfcId].filter(Boolean),
+      offerPriority: 'BEST_RATE',
+      maxOffersToShow: 4,
+    },
+    {
+      segmentCode: 'MSME-OWNER',
+      segmentName: 'MSME Business Owner',
+      description: 'Self-employed business owners operating through a registered entity.',
+      segmentType: 'BEHAVIORAL',
+      priority: 80,
+      rules: [
+        { field: 'customer.employmentType', operator: 'IN', value: ['SELF_EMPLOYED_BUSINESS'] },
+        { field: 'customer.customerType', operator: 'IN', value: ['PROPRIETORSHIP', 'PARTNERSHIP', 'PRIVATE_LIMITED'] },
+      ],
+      mappedSchemeIds: [btBonanzaId].filter(Boolean),
+      offerPriority: 'LOWEST_FEE',
+      maxOffersToShow: 2,
+    },
+    {
+      segmentCode: 'EXISTING-GOOD',
+      segmentName: 'Existing Customer — Good Standing',
+      description: 'Existing borrowers with at least one loan and max DPD ≤ 30 days.',
+      segmentType: 'LOYALTY',
+      priority: 85,
+      rules: [
+        { field: 'loan.existingLoanCount', operator: 'GTE', value: 1 },
+        { field: 'loan.maxDpd', operator: 'LTE', value: 30 },
+      ],
+      mappedSchemeIds: [btBonanzaId].filter(Boolean),
+      offerPriority: 'BEST_RATE',
+      maxOffersToShow: 2,
+    },
+    {
+      segmentCode: 'RURAL-SEMI-URBAN',
+      segmentName: 'Rural / Semi-Urban',
+      description: 'Customers from rural or semi-urban areas (pincode starting with 3).',
+      segmentType: 'GEOGRAPHIC',
+      priority: 70,
+      rules: [
+        { field: 'customer.pincode', operator: 'STARTS_WITH', value: '3' },
+      ],
+      mappedSchemeIds: [diwalId].filter(Boolean),
+      offerPriority: 'LOWEST_FEE',
+      maxOffersToShow: 2,
+    },
+  ];
+
+  for (const seg of segmentDefs) {
+    await prisma.customerSegment.upsert({
+      where: {
+        organizationId_segmentCode: {
+          organizationId: org.id,
+          segmentCode: seg.segmentCode,
+        },
+      },
+      update: {},
+      create: {
+        organizationId: org.id,
+        segmentCode: seg.segmentCode,
+        segmentName: seg.segmentName,
+        description: seg.description,
+        segmentType: seg.segmentType,
+        priority: seg.priority,
+        isActive: true,
+        isAutoAssign: true,
+        rules: seg.rules,
+        mappedSchemeIds: seg.mappedSchemeIds.length > 0 ? seg.mappedSchemeIds : Prisma.JsonNull,
+        mappedProductIds: Prisma.JsonNull,
+        offerPriority: seg.offerPriority,
+        maxOffersToShow: seg.maxOffersToShow,
+        createdBy: seedUserId,
+      },
+    });
+  }
+  console.log(`  ${segmentDefs.length} customer segments created`);
+
+  // ── Lead Score Config ─────────────────────────────────────────────────────
+  console.log('\n[10] Seeding Lead Score Config...');
+
+  const leadScoreConfig = await prisma.leadScoreConfig.upsert({
+    where: { organizationId_configName: { organizationId: org.id, configName: 'Standard Lead Score' } },
+    update: {},
+    create: {
+      organizationId: org.id,
+      configName: 'Standard Lead Score',
+      productId: null, // applies to all products
+      isActive: true,
+      totalMaxScore: 100,
+      factors: [
+        {
+          factorCode: 'BUREAU_SCORE',
+          factorName: 'Credit Bureau Score',
+          category: 'CREDITWORTHINESS',
+          maxPoints: 25,
+          weight: 1.0,
+          rules: [
+            { condition: { field: 'bureau.score', operator: 'GTE', value: 750 }, points: 25, label: 'Excellent (750+)' },
+            { condition: { field: 'bureau.score', operator: 'BETWEEN', value: 700, value2: 749 }, points: 20, label: 'Good (700-749)' },
+            { condition: { field: 'bureau.score', operator: 'BETWEEN', value: 650, value2: 699 }, points: 12, label: 'Fair (650-699)' },
+            { condition: { field: 'bureau.score', operator: 'LT', value: 650 }, points: 5, label: 'Poor (<650)' },
+            { condition: { field: 'bureau.score', operator: 'EQ', value: -1 }, points: 0, label: 'No bureau history' },
+          ],
+        },
+        {
+          factorCode: 'INCOME_LEVEL',
+          factorName: 'Monthly Income',
+          category: 'FINANCIAL',
+          maxPoints: 20,
+          weight: 1.0,
+          rules: [
+            { condition: { field: 'customer.monthlyIncomePaisa', operator: 'GTE', value: 15000000 }, points: 20, label: '₹1.5L+' },
+            { condition: { field: 'customer.monthlyIncomePaisa', operator: 'BETWEEN', value: 7500000, value2: 14999999 }, points: 15, label: '₹75K-1.5L' },
+            { condition: { field: 'customer.monthlyIncomePaisa', operator: 'BETWEEN', value: 3000000, value2: 7499999 }, points: 10, label: '₹30K-75K' },
+            { condition: { field: 'customer.monthlyIncomePaisa', operator: 'LT', value: 3000000 }, points: 5, label: '<₹30K' },
+          ],
+        },
+        {
+          factorCode: 'EMPLOYMENT_STABILITY',
+          factorName: 'Employment Type & Stability',
+          category: 'STABILITY',
+          maxPoints: 15,
+          weight: 1.0,
+          rules: [
+            { condition: { field: 'customer.employmentType', operator: 'EQ', value: 'SALARIED' }, points: 15, label: 'Salaried' },
+            { condition: { field: 'customer.employmentType', operator: 'EQ', value: 'SELF_EMPLOYED_PROFESSIONAL' }, points: 12, label: 'Self-Employed Professional' },
+            { condition: { field: 'customer.employmentType', operator: 'EQ', value: 'SELF_EMPLOYED_BUSINESS' }, points: 10, label: 'Business Owner' },
+            { condition: { field: 'customer.employmentType', operator: 'IN', value: ['RETIRED', 'HOMEMAKER'] }, points: 3, label: 'Retired/Homemaker' },
+          ],
+        },
+        {
+          factorCode: 'EXISTING_OBLIGATIONS',
+          factorName: 'Existing Loan Obligations',
+          category: 'CREDITWORTHINESS',
+          maxPoints: 10,
+          weight: 1.0,
+          rules: [
+            { condition: { field: 'bureau.totalActiveLoans', operator: 'EQ', value: 0 }, points: 10, label: 'No existing loans' },
+            { condition: { field: 'bureau.totalActiveLoans', operator: 'BETWEEN', value: 1, value2: 2 }, points: 7, label: '1-2 loans' },
+            { condition: { field: 'bureau.totalActiveLoans', operator: 'BETWEEN', value: 3, value2: 5 }, points: 4, label: '3-5 loans' },
+            { condition: { field: 'bureau.totalActiveLoans', operator: 'GT', value: 5 }, points: 1, label: '5+ loans' },
+          ],
+        },
+        {
+          factorCode: 'KYC_STATUS',
+          factorName: 'KYC Verification',
+          category: 'COMPLIANCE',
+          maxPoints: 5,
+          weight: 1.0,
+          rules: [
+            { condition: { field: 'customer.kycStatus', operator: 'EQ', value: 'VERIFIED' }, points: 5, label: 'KYC Verified' },
+            { condition: { field: 'customer.kycStatus', operator: 'EQ', value: 'IN_PROGRESS' }, points: 2, label: 'KYC In Progress' },
+            { condition: { field: 'customer.kycStatus', operator: 'IN', value: ['NOT_STARTED', 'PENDING'] }, points: 0, label: 'KYC Pending' },
+          ],
+        },
+        {
+          factorCode: 'REPAYMENT_HISTORY',
+          factorName: 'Past Repayment Track',
+          category: 'CREDITWORTHINESS',
+          maxPoints: 10,
+          weight: 1.0,
+          rules: [
+            { condition: { field: 'bureau.maxDpdLast12Months', operator: 'EQ', value: 0 }, points: 10, label: 'Zero DPD' },
+            { condition: { field: 'bureau.maxDpdLast12Months', operator: 'LTE', value: 30 }, points: 6, label: 'Max 30 DPD' },
+            { condition: { field: 'bureau.maxDpdLast12Months', operator: 'LTE', value: 60 }, points: 3, label: 'Max 60 DPD' },
+            { condition: { field: 'bureau.maxDpdLast12Months', operator: 'GT', value: 60 }, points: 0, label: '60+ DPD' },
+          ],
+        },
+        {
+          factorCode: 'WRITE_OFF_CHECK',
+          factorName: 'Write-off / Settlement History',
+          category: 'RED_FLAG',
+          maxPoints: 5,
+          weight: 1.0,
+          rules: [
+            { condition: { field: 'bureau.hasWriteOff', operator: 'EQ', value: false }, points: 5, label: 'No write-offs' },
+            { condition: { field: 'bureau.hasWriteOff', operator: 'EQ', value: true }, points: 0, label: 'Has write-off' },
+          ],
+        },
+        {
+          factorCode: 'ENQUIRY_INTENSITY',
+          factorName: 'Recent Bureau Enquiries',
+          category: 'BEHAVIORAL',
+          maxPoints: 5,
+          weight: 1.0,
+          rules: [
+            { condition: { field: 'bureau.enquiriesLast3Months', operator: 'LTE', value: 2 }, points: 5, label: 'Low (0-2)' },
+            { condition: { field: 'bureau.enquiriesLast3Months', operator: 'BETWEEN', value: 3, value2: 5 }, points: 3, label: 'Moderate (3-5)' },
+            { condition: { field: 'bureau.enquiriesLast3Months', operator: 'GT', value: 5 }, points: 0, label: 'High (5+)' },
+          ],
+        },
+        {
+          factorCode: 'LOAN_AMOUNT_RATIO',
+          factorName: 'Requested Amount vs Income',
+          category: 'FINANCIAL',
+          maxPoints: 3,
+          weight: 1.0,
+          rules: [
+            { condition: { field: 'application.requestedAmountPaisa', operator: 'LTE', value: 'customer.monthlyIncomePaisa * 36' }, points: 3, label: 'Conservative (<3yr income)' },
+            { condition: { field: 'application.requestedAmountPaisa', operator: 'LTE', value: 'customer.monthlyIncomePaisa * 60' }, points: 2, label: 'Moderate (3-5yr income)' },
+            { condition: { field: 'application.requestedAmountPaisa', operator: 'GT', value: 'customer.monthlyIncomePaisa * 60' }, points: 0, label: 'Stretched (>5yr income)' },
+          ],
+        },
+        {
+          factorCode: 'SOURCE_QUALITY',
+          factorName: 'Lead Source',
+          category: 'BEHAVIORAL',
+          maxPoints: 2,
+          weight: 1.0,
+          rules: [
+            { condition: { field: 'application.sourceType', operator: 'IN', value: ['BRANCH', 'WEB'] }, points: 2, label: 'Direct' },
+            { condition: { field: 'application.sourceType', operator: 'EQ', value: 'DSA' }, points: 1, label: 'DSA' },
+            { condition: { field: 'application.sourceType', operator: 'EQ', value: 'WALKIN' }, points: 1, label: 'Walk-in' },
+          ],
+        },
+      ],
+      grades: [
+        { grade: 'A', label: 'Hot Lead', minScore: 80, maxScore: 100, color: '#22c55e', action: 'CALL_WITHIN_1_HOUR' },
+        { grade: 'B', label: 'Warm Lead', minScore: 60, maxScore: 79, color: '#eab308', action: 'CALL_WITHIN_4_HOURS' },
+        { grade: 'C', label: 'Cool Lead', minScore: 40, maxScore: 59, color: '#f97316', action: 'CALL_WITHIN_24_HOURS' },
+        { grade: 'D', label: 'Cold Lead', minScore: 20, maxScore: 39, color: '#ef4444', action: 'NURTURE_CAMPAIGN' },
+        { grade: 'F', label: 'Unqualified', minScore: 0, maxScore: 19, color: '#6b7280', action: 'DEPRIORITIZE' },
+      ],
+      autoAssignGrades: { A: 'CREDIT_HEAD', B: 'SENIOR_CREDIT_OFFICER', C: 'CREDIT_OFFICER' },
+      autoNotifyGrades: { A: ['SMS', 'WHATSAPP'], B: ['SMS'] },
+      createdBy: seedUserId,
+    },
+  });
+  console.log(`  Lead Score Config '${leadScoreConfig.configName}' created (id: ${leadScoreConfig.id})`);
+
   console.log('\nSeed completed successfully!');
   console.log('Summary:');
   console.log('  1 Organization (Growth Finance Ltd)');
@@ -1370,6 +2132,10 @@ async function main() {
   console.log(`  ${customFieldDefs.length} Custom Field Definitions`);
   console.log(`  ${collectionStrategies.length} Collection Strategies`);
   console.log(`  ${glAccountDefs.length} GL Accounts`);
+  console.log(`  ${schemeDefs.length} Sample Schemes`);
+  console.log(`  ${feeTemplateDefs.length} VAS Fee Templates`);
+  console.log(`  ${segmentDefs.length} Customer Segments`);
+  console.log('  1 Lead Score Config (Standard Lead Score)');
 }
 
 main()

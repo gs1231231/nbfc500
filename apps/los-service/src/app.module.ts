@@ -20,6 +20,10 @@ import { MSMEModule } from './msme/msme.module';
 import { BtModule } from './balance-transfer/bt.module';
 // GAP 13: MFI Specific Operations (JLG/SHG groups, CGT, GRT, bulk disburse)
 import { MfiModule } from './mfi/mfi.module';
+import { SchemeModule } from './scheme/scheme.module';
+import { VasModule } from './vas/vas.module';
+import { SegmentationModule } from './segmentation/segmentation.module';
+import { LeadScoringModule } from './lead-scoring/lead-scoring.module';
 
 @Module({
   imports: [
@@ -48,6 +52,14 @@ import { MfiModule } from './mfi/mfi.module';
     BtModule,
     // Gap 13: MFI Operations
     MfiModule,
+    // Scheme Master
+    SchemeModule,
+    // VAS / Fee Templates
+    VasModule,
+    // Customer Segmentation Engine
+    SegmentationModule,
+    // Lead Scoring Engine
+    LeadScoringModule,
   ],
 })
 export class AppModule {}

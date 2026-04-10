@@ -89,6 +89,12 @@ import { ReportsModule } from './reports/reports.module';
 import { CustomerServiceModule } from './customer-service/customer-service.module';
 // ── Gap 13: MFI Operations ────────────────────────────────────────────────
 import { MfiModule } from '../../los-service/src/mfi/mfi.module';
+// ── Scheme Master ─────────────────────────────────────────────────────────
+import { SchemeModule } from '../../los-service/src/scheme/scheme.module';
+// ── VAS / Fee Templates ────────────────────────────────────────────────────
+import { VasModule } from '../../los-service/src/vas/vas.module';
+// ── Customer Segmentation Engine ──────────────────────────────────────────
+import { SegmentationModule } from '../../los-service/src/segmentation/segmentation.module';
 // ── Gap 14: Welcome Kit + Annual Communications ───────────────────────────
 import { CommunicationsModule } from '../../lms-service/src/communications/communications.module';
 // ── Improvements 15-18: Audit Trail, Bulk Operations, Data Export ─────────
@@ -186,6 +192,15 @@ import { ExportModule } from './export/export.module';
     AuditModule,
     BulkModule,
     ExportModule,
+
+    // ── Scheme Master
+    SchemeModule,
+
+    // ── VAS / Fee Templates
+    VasModule,
+
+    // ── Customer Segmentation Engine
+    SegmentationModule,
   ],
 })
 export class AppModuleProd {}

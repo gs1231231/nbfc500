@@ -330,6 +330,16 @@ model Organization {
   dataPrivacyRequests    DataPrivacyRequest[]
   // GAP 13: MFI Group Lending
   mfiGroups              MFIGroup[]
+  // Scheme Master
+  schemes                Scheme[]
+  // VAS / Fee Templates
+  feeTemplates           FeeTemplate[]
+  appliedFees            AppliedFee[]
+  // Customer Segmentation
+  customerSegments       CustomerSegment[]
+  // Lead Scoring
+  leadScoreConfigs       LeadScoreConfig[]
+  leadScores             LeadScore[]
 
   @@index([code])
   @@map("organizations")
@@ -529,6 +539,8 @@ model Customer {
   addresses        CustomerAddress[]
   employments      CustomerEmployment[]
   bankAccounts     CustomerBankAccount[]
+  segmentMemberships CustomerSegmentMember[]
+  leadScores         LeadScore[]
 
   @@index([organizationId])
   @@index([organizationId, phone])
@@ -566,6 +578,7 @@ model LoanProduct {
   workflowTemplates WorkflowTemplate[]
   feeConfigs        ProductFeeConfig[]
   rateCards         InterestRateCard[]
+  schemes           Scheme[]
 
   @@index([organizationId])
   @@map("loan_products")
@@ -612,6 +625,9 @@ model LoanApplication {
   cam                  CreditAppraisalMemo?
   sanctionLetter       SanctionLetter?
   disbursementRequests DisbursementRequest[]
+  schemeApplications   SchemeApplication[]
+  appliedFees          AppliedFee[]
+  leadScores           LeadScore[]
 
   @@index([organizationId])
   @@index([organizationId, status])
@@ -1819,4 +1835,350 @@ model MSMEDetail {
   organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   @@index([organizationId])
   @@map("msme_details")
+}
+
+// ============================================================
+// SCHEME MASTER
+// ============================================================
+
+model Scheme {
+  id                String   @id @default(uuid())
+  organizationId    String
+  productId         String?  // null = all products
+  schemeCode        String
+  schemeName        String
+  description       String?
+  schemeType        String   // FESTIVE, PROMOTIONAL, BALANCE_TRANSFER, TOP_UP, CORPORATE_TIE_UP, SEASONAL, LOYALTY, GOVERNMENT
+  validFrom         DateTime
+  validTo           DateTime
+  isActive          Boolean  @default(true)
+
+  // Eligibility criteria
+  minCibilScore              Int?
+  maxCibilScore              Int?
+  minAmountPaisa             Int?
+  maxAmountPaisa             Int?
+  minTenureMonths            Int?
+  maxTenureMonths            Int?
+  eligibleEmploymentTypes    Json? // ["SALARIED", "SELF_EMPLOYED_BUSINESS"]
+  eligibleCustomerTypes      Json? // ["INDIVIDUAL", "PROPRIETORSHIP"]
+  minAgeDays                 Int?
+  maxAgeDays                 Int?
+  eligibleBranches           Json? // branch IDs, null = all
+  eligibleDsas               Json? // DSA IDs, null = all
+  eligibilityCriteria        Json? // additional custom criteria
+
+  // Benefits
+  interestRateDiscountBps         Int?
+  fixedInterestRateBps            Int?
+  processingFeeDiscountPercent    Decimal? @db.Decimal(5,2)
+  processingFeeWaiver             Boolean  @default(false)
+  stampDutyWaiver                 Boolean  @default(false)
+  insuranceDiscount               Decimal? @db.Decimal(5,2)
+  cashbackAmountPaisa             Int?
+  cashbackCondition               String?  // AFTER_3_EMI_PAID, AFTER_6_EMI_PAID, AT_DISBURSAL
+  topUpEligibleAfterMonths        Int?
+  balanceTransferMaxDays          Int?
+  additionalBenefits              Json?
+
+  // Limits & Budget
+  maxDisbursementCount            Int?
+  maxDisbursementAmountPaisa      BigInt?
+  currentDisbursementCount        Int    @default(0)
+  currentDisbursementAmountPaisa  BigInt @default(0)
+  maxPerBranchCount               Int?
+  maxPerDsaCount                  Int?
+
+  // Approval
+  requiresApproval               Boolean @default(false)
+  approvalAuthority              String?
+
+  // Tracking
+  createdBy         String
+  updatedBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  product           LoanProduct?       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  applications      SchemeApplication[]
+
+  @@unique([organizationId, schemeCode])
+  @@index([organizationId, isActive])
+  @@index([organizationId, validFrom, validTo])
+  @@map("schemes")
+}
+
+model SchemeApplication {
+  id               String    @id @default(uuid())
+  schemeId         String
+  applicationId    String
+  loanId           String?
+  benefitsApplied  Json      @default("{}")
+  cashbackStatus   String?   // PENDING, ELIGIBLE, PAID, FORFEITED
+  cashbackPaidDate DateTime?
+  createdAt        DateTime  @default(now())
+
+  scheme           Scheme          @relation(fields: [schemeId], references: [id], onDelete: Restrict)
+  application      LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+
+  @@unique([schemeId, applicationId])
+  @@index([schemeId])
+  @@index([applicationId])
+  @@map("scheme_applications")
+}
+
+// ============================================================
+// VAS — Value Added Services / Dynamic Fee Template Engine
+// ============================================================
+
+model FeeTemplate {
+  id                String   @id @default(uuid())
+  organizationId    String
+  templateName      String
+  feeCode           String   // PROCESSING_FEE, LOGIN_FEE, DOCUMENTATION_CHARGE, LEGAL_FEE, VALUATION_FEE, STAMP_DUTY, INSURANCE_PREMIUM, CIBIL_CHARGE, NACH_CHARGE, FILE_CHARGE, CERSAI_FEE, MOD_CHARGE, SWAP_FEE, PREPAYMENT_PENALTY, FORECLOSURE_CHARGE, BOUNCE_CHARGE, PENAL_INTEREST, LATE_PAYMENT_FEE, CHEQUE_RETURN, MANDATE_REJECTION, SOA_CHARGE, NOC_CHARGE, REPOSSESSION_CHARGE, AUCTION_FEE, LEGAL_NOTICE_FEE, COURIER_CHARGE, VISIT_CHARGE, OTHER
+  feeCategory       String   // ORIGINATION, SERVICING, PENAL, CLOSURE, COLLECTION, REGULATORY, OTHER
+  description       String?
+  isActive          Boolean  @default(true)
+
+  // Applicability — null means "all / no restriction"
+  productIds        Json?    // array of product IDs; null = all products
+  minAmountPaisa    Int?
+  maxAmountPaisa    Int?
+  minRateBps        Int?
+  maxRateBps        Int?
+  minTenureMonths   Int?
+  maxTenureMonths   Int?
+  customerTypes     Json?    // ["INDIVIDUAL", "PROPRIETORSHIP"]
+  employmentTypes   Json?    // ["SALARIED", "SELF_EMPLOYED_BUSINESS"]
+  sourceTypes       Json?    // ["DSA", "BRANCH", "WEB"]
+  schemeIds         Json?    // specific scheme IDs; null = all
+  loanStatuses      Json?    // when fee applies for servicing fees
+  triggerEvent      String?  // DISBURSAL, BOUNCE, PREPAYMENT, FORECLOSURE, NPA, MANDATE_FAIL, MONTHLY, ANNUAL, ON_DEMAND
+
+  // Calculation
+  calculationType   String   // FLAT, PERCENTAGE, SLAB, PER_UNIT, FORMULA
+
+  // FLAT
+  flatAmountPaisa   Int?
+
+  // PERCENTAGE
+  percentageValue   Decimal? @db.Decimal(8,4)  // e.g., 2.5 means 2.5%
+  percentageBase    String?  // LOAN_AMOUNT, OUTSTANDING_PRINCIPAL, OVERDUE_AMOUNT, EMI_AMOUNT, DISBURSED_AMOUNT
+  minCapPaisa       Int?
+  maxCapPaisa       Int?
+
+  // SLAB (amount-based tiers stored as JSON array)
+  slabs             Json?    // [{upToPaisa:500000,flatPaisa:2000},{upToPaisa:null,flatPaisa:5000}] or with percent
+
+  // PER_UNIT
+  perUnitAmountPaisa Int?
+  unitType          String?  // GOLD_ITEM, TRANCHE, PROPERTY, DOCUMENT
+
+  // FORMULA
+  formula           String?  // safe expression e.g. "loanAmount * 0.01 + 50000"
+
+  // Tax
+  gstApplicable     Boolean  @default(true)
+  gstPercent        Decimal  @db.Decimal(5,2) @default(18.00)
+  cessPercent       Decimal? @db.Decimal(5,2)
+
+  // Collection
+  collectAt         String   @default("DISBURSAL") // DISBURSAL, UPFRONT, POST_DISBURSAL, ON_EVENT, MONTHLY
+  deductFromDisbursement Boolean @default(false)
+  isRefundable      Boolean  @default(false)
+  refundCondition   String?
+
+  // Display
+  displayOrder      Int      @default(0)
+  showInSanctionLetter Boolean @default(true)
+  showInKFS         Boolean  @default(true)
+  isNegotiable      Boolean  @default(false)
+  maxDiscountPercent Decimal? @db.Decimal(5,2)
+
+  createdBy         String
+  updatedBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  appliedFees       AppliedFee[]
+
+  @@index([organizationId, isActive])
+  @@index([organizationId, feeCode])
+  @@map("fee_templates")
+}
+
+model AppliedFee {
+  id                String   @id @default(uuid())
+  organizationId    String
+  feeTemplateId     String
+  applicationId     String?
+  loanId            String?
+  feeCode           String
+  feeName           String
+  baseAmountPaisa   Int
+  gstAmountPaisa    Int      @default(0)
+  cessAmountPaisa   Int      @default(0)
+  totalAmountPaisa  Int
+  discountPaisa     Int      @default(0)
+  waivedPaisa       Int      @default(0)
+  netPayablePaisa   Int
+  status            String   @default("CALCULATED") // CALCULATED, APPROVED, COLLECTED, WAIVED, REFUNDED
+  collectedAt       DateTime?
+  waivedBy          String?
+  waivedReason      String?
+  deductedFromDisbursement Boolean @default(false)
+  calculationDetails Json    @default("{}")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  feeTemplate       FeeTemplate      @relation(fields: [feeTemplateId], references: [id], onDelete: Restrict)
+  application       LoanApplication? @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([applicationId])
+  @@index([loanId])
+  @@map("applied_fees")
+}
+
+// ============================================================
+// CUSTOMER SEGMENTATION ENGINE
+// ============================================================
+
+model CustomerSegment {
+  id                String   @id @default(uuid())
+  organizationId    String
+  segmentCode       String
+  segmentName       String
+  description       String?
+  segmentType       String   // DEMOGRAPHIC, BEHAVIORAL, RISK, INCOME, PRODUCT_AFFINITY, GEOGRAPHIC, LOYALTY, CUSTOM
+  priority          Int      @default(0) // higher = evaluated first
+
+  isActive          Boolean  @default(true)
+  isAutoAssign      Boolean  @default(true) // auto-assign during application
+
+  // Rules (evaluated as AND conditions — all must match)
+  // Each rule: { field, operator, value, value2? }
+  // Fields: customer.age, customer.gender, customer.employmentType, customer.customerType,
+  //         customer.monthlyIncomePaisa, customer.city, customer.state, customer.pincode,
+  //         customer.kycStatus, customer.riskCategory,
+  //         bureau.score, bureau.totalActiveLoans, bureau.maxDpdLast12Months,
+  //         bureau.hasWriteOff, bureau.enquiriesLast3Months,
+  //         loan.existingLoanCount, loan.totalOutstandingPaisa, loan.maxDpd,
+  //         custom.<fieldKey>  (custom fields)
+  // Operators: EQ, NEQ, GT, GTE, LT, LTE, IN, NOT_IN, BETWEEN, CONTAINS, STARTS_WITH, IS_NULL, IS_NOT_NULL
+  rules             Json
+
+  // Mapped schemes (auto-show these schemes for this segment)
+  mappedSchemeIds   Json?    // array of scheme IDs
+
+  // Mapped products (segment is relevant for these products)
+  mappedProductIds  Json?    // array of product IDs, null = all
+
+  // Communication preferences
+  defaultLanguage   String?  // en, hi, mr, ta, etc.
+  preferredChannel  String?  // SMS, WHATSAPP, EMAIL
+  communicationFrequency String? // HIGH, MEDIUM, LOW
+
+  // Offer config
+  maxOffersToShow   Int      @default(3)
+  offerPriority     String   @default("BEST_RATE") // BEST_RATE, LOWEST_FEE, HIGHEST_CASHBACK, MANUAL
+
+  createdBy         String
+  updatedBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization      Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  members           CustomerSegmentMember[]
+
+  @@unique([organizationId, segmentCode])
+  @@index([organizationId, isActive])
+  @@map("customer_segments")
+}
+
+model CustomerSegmentMember {
+  id                String   @id @default(uuid())
+  segmentId         String
+  customerId        String
+  applicationId     String?  // which application triggered this assignment
+  assignedAt        DateTime @default(now())
+  assignedBy        String   @default("SYSTEM") // SYSTEM or userId
+  isActive          Boolean  @default(true)
+  score             Decimal? @db.Decimal(5,2)  // segment match score 0-100
+  metadata          Json?    // snapshot of matching criteria values
+
+  segment           CustomerSegment @relation(fields: [segmentId], references: [id], onDelete: Restrict)
+  customer          Customer        @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@unique([segmentId, customerId])
+  @@index([customerId])
+  @@index([segmentId])
+  @@map("customer_segment_members")
+}
+
+// ============================================================
+// Lead Scoring Engine
+// ============================================================
+
+model LeadScoreConfig {
+  id             String   @id @default(uuid())
+  organizationId String
+  configName     String
+  productId      String?  // null = applies to all products
+  isActive       Boolean  @default(true)
+  totalMaxScore  Int      @default(100)
+
+  // Scoring factors with weights
+  // Each factor: { factorCode, factorName, category, maxPoints, weight, rules: [{ condition: {field, operator, value, value2?}, points, label }] }
+  factors        Json
+
+  // Grade thresholds: [{ grade, label, minScore, maxScore, color, action }]
+  grades         Json
+
+  // Auto-actions per grade
+  autoAssignGrades Json?  // { "A": "SENIOR_CREDIT_OFFICER", "B": "CREDIT_OFFICER" }
+  autoNotifyGrades Json?  // { "A": ["SMS", "WHATSAPP"], "B": ["SMS"] }
+
+  createdBy      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  scores       LeadScore[]
+
+  @@unique([organizationId, configName])
+  @@index([organizationId, isActive])
+  @@map("lead_score_configs")
+}
+
+model LeadScore {
+  id                String   @id @default(uuid())
+  organizationId    String
+  applicationId     String
+  customerId        String
+  configId          String
+  totalScore        Int      // 0-100
+  grade             String   // A, B, C, D, F
+  gradeLabel        String   // Hot Lead, Warm Lead, etc.
+  // [{ factorCode, factorName, category, maxPoints, earnedPoints, matchedRule, rawValue }]
+  factorScores      Json
+  recommendedAction String?
+  scoredAt          DateTime @default(now())
+  previousScore     Int?     // for tracking score changes
+  scoreChange       Int?     // delta from previous
+  version           Int      @default(1)
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  config       LeadScoreConfig @relation(fields: [configId], references: [id], onDelete: Restrict)
+  application  LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  customer     Customer        @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([applicationId])
+  @@index([organizationId, grade])
+  @@index([organizationId, totalScore])
+  @@map("lead_scores")
 }

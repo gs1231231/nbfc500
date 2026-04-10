@@ -15,6 +15,10 @@ import {
   Building2,
   X,
   UserPlus,
+  Tag,
+  Coins,
+  Layers,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +31,10 @@ const navItems = [
   { href: "/collections", label: "Collections", icon: PhoneCall },
   { href: "/co-lending", label: "Co-Lending", icon: GitMerge },
   { href: "/bre-rules", label: "BRE Rules", icon: Shield },
+  { href: "/schemes", label: "Schemes", icon: Tag },
+  { href: "/segments", label: "Segments", icon: Layers },
+  { href: "/lead-scoring", label: "Lead Scoring", icon: Star },
+  { href: "/vas", label: "VAS / Fees", icon: Coins },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
